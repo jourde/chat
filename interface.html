@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Engeström Activity System Analyser</title>
+<title>Activity System Analyser based on cultural-historical activity theory (CHAT)</title>
 <style>
   /* ── Reset ── */
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -206,11 +206,25 @@
     #app { flex-direction: column; }
     #left, #right { flex: none; width: 100%; }
   }
+
+  /* ── Dual system mode ── */
+  #app.dual-active #left { flex: 0 0 72%; }
+  @media (max-width: 900px) {
+    #app.dual-active { flex-direction: column; }
+    #app.dual-active #left { flex: none; width: 100%; }
+  }
+
+  /* ── Summary system headings ── */
+  .sr-sys-heading {
+    font-size: 0.75rem; font-weight: 700; color: #444;
+    text-transform: uppercase; letter-spacing: 0.06em;
+    margin-top: 4px; margin-bottom: 2px;
+  }
 </style>
 </head>
 <body>
 
-<h1>Engeström Activity System Analyser</h1>
+<h1>Activity System Analyser based on cultural-historical activity theory (CHAT)</h1>
 
 <!-- Hidden live region for screen-reader announcements -->
 <div id="live-region" aria-live="polite" aria-atomic="true" class="visually-hidden"></div>
@@ -257,6 +271,7 @@
     <!-- Action bar -->
     <div class="btn-row" role="toolbar" aria-label="Actions">
       <button id="analyse-btn">Explain the model</button>
+      <button id="dual-btn" aria-pressed="false">Show two systems</button>
       <button id="contra-btn" aria-pressed="false">⚡ Add a contradiction</button>
       <button id="copy-btn">Copy summary and notes</button>
       <div id="export-wrap">
@@ -379,32 +394,32 @@ const Cx=(Rx+Dx)/2, Cy=(Ry+Dy)/2;
 const R=9, GAP=6;
 
 const NODES = [
-  { id:"tools",     short:"Tools",       x:Tx, y:Ty,
+  { id:"tools",     short:"Tools",     x:Tx, y:Ty,
     label:"Mediating artefacts (tools and signs)",
     guidance:"Physical objects and systems of symbols (like language, mathematics, digital tools) that people use to accomplish the activity.",
     prompt:"What tools, technologies, signs or symbols mediate this activity?",
     lines:["Tools",null], lx:0, ly:-22, anchor:"middle", ly2:-10 },
-  { id:"subject",   short:"Subject",     x:Sx, y:Sy,
+  { id:"subject",   short:"Subject",   x:Sx, y:Sy,
     label:"Subject",
     guidance:"The person or group engaged in the activity who are the focus of analysis.",
     prompt:"Who performs the activity? Whose perspective are you analysing?",
     lines:["Subject",null], lx:-16, ly:0, anchor:"end", ly2:14 },
-  { id:"object",    short:"Object",      x:Ox, y:Oy,
+  { id:"object",    short:"Object",    x:Ox, y:Oy,
     label:"Object / Motive",
     guidance:"The immediate goals of the activity — what is being worked on or transformed.",
     prompt:"What is being transformed? What are the immediate goals and underlying motives?",
     lines:["Object",null], lx:16, ly:0, anchor:"start", ly2:14 },
-  { id:"rules",     short:"Rules",       x:Rx, y:Ry,
+  { id:"rules",     short:"Rules",     x:Rx, y:Ry,
     label:"Rules",
     guidance:"Laws, codes, conventions, customs and agreements that people adhere to while engaging in the activity.",
     prompt:"What rules, norms or regulations constrain or guide the activity?",
     lines:["Rules",null], lx:-14, ly:22, anchor:"end", ly2:36 },
-  { id:"community", short:"Community",   x:Cx, y:Cy,
+  { id:"community", short:"Community", x:Cx, y:Cy,
     label:"Community",
     guidance:"People and groups whose knowledge, interests, stakes and goals shape the activity.",
     prompt:"Who else shares or has a stake in this activity?",
     lines:["Community",null], lx:0, ly:22, anchor:"middle", ly2:36 },
-  { id:"division",  short:"Division",    x:Dx, y:Dy,
+  { id:"division",  short:"Division",  x:Dx, y:Dy,
     label:"Division of Labour",
     guidance:"How the work in the activity is divided among participants — tasks and power.",
     prompt:"How are tasks, roles and power distributed among participants?",
@@ -421,12 +436,34 @@ const EDGES = [
 
 const COL = {tools:"#534AB7",subject:"#0F6E56",object:"#993C1D",rules:"#185FA5",community:"#854F0B",division:"#993556"};
 
-const vals = {tools:"",subject:"",object:"",rules:"",community:"",division:""};
-let activeId = null;
+/* ── System 2 mirror coordinates ── */
+const X2 = 680;
+const NODES2 = NODES.map(n => ({
+  ...n,
+  id: n.id + "_2",
+  x: X2 + (W - n.x),
+  lx: -n.lx,
+  anchor: n.anchor==="start" ? "end" : n.anchor==="end" ? "start" : "middle",
+}));
+const EDGES2 = EDGES.map(([a,b]) => [a+"_2", b+"_2"]);
+
+/* ── State ── */
+const vals  = {tools:"",subject:"",object:"",rules:"",community:"",division:""};
+const vals2 = {tools:"",subject:"",object:"",rules:"",community:"",division:""};
+let activeId      = null;
+let dualMode      = false;
+let activeSystem  = 1;
+let sharedObject  = "";
+let sharedOutcome = "";
+
+function storeFor(id) { return id.endsWith("_2") ? vals2 : vals; }
+function baseId(id)   { return id.endsWith("_2") ? id.slice(0,-2) : id; }
+function nodeDef(id)  { return NODES.find(x=>x.id===baseId(id)); }
+function allActiveNodes() { return dualMode ? [...NODES, ...NODES2] : NODES; }
 
 /* ── SVG helpers ── */
 const svg = document.getElementById("tri");
-const NS = "http://www.w3.org/2000/svg";
+const NS  = "http://www.w3.org/2000/svg";
 
 function el(tag, attrs, parent) {
   const e = document.createElementNS(NS, tag);
@@ -435,16 +472,11 @@ function el(tag, attrs, parent) {
   return e;
 }
 
-/* ── Markers (decorative) ── */
-const defs = el("defs",{},svg);
-function mkMarker(id, refX, reverse) {
+function mkMarker(defs, id, refX, reverse) {
   const m = el("marker",{id, markerWidth:"8", markerHeight:"8", refX:String(refX), refY:"4",
     orient:reverse?"auto-start-reverse":"auto", markerUnits:"userSpaceOnUse"},defs);
   el("path",{d:"M0,1 L7,4 L0,7 z", fill:id==="tip-out"?"#595959":"#333"},m);
 }
-mkMarker("tip-end",0,false);
-mkMarker("tip-start",7,true);
-mkMarker("tip-out",0,false);
 
 function shorten(x1,y1,x2,y2) {
   const dx=x2-x1, dy=y2-y1, len=Math.sqrt(dx*dx+dy*dy);
@@ -453,94 +485,188 @@ function shorten(x1,y1,x2,y2) {
   return {x1:x1+ux*pad,y1:y1+uy*pad,x2:x2-ux*pad,y2:y2-uy*pad};
 }
 
-/* ── Draw edges (decorative — aria-hidden) ── */
-const edgesGroup = el("g",{"aria-hidden":"true"},svg);
-for (const [a,b] of EDGES) {
-  const na=NODES.find(n=>n.id===a), nb=NODES.find(n=>n.id===b);
-  const s=shorten(na.x,na.y,nb.x,nb.y);
-  el("line",{x1:s.x1,y1:s.y1,x2:s.x2,y2:s.y2,
-    stroke:"#333","stroke-width":"1.5",
-    "marker-start":"url(#tip-start)","marker-end":"url(#tip-end)"},edgesGroup);
-}
+/* ── SVG construction ── */
+let nodeEls         = {};
+let contraLayer     = null;
+let sharedObjPreview = null;
+let sharedOutPreview = null;
 
-/* ── Outcome arrow (decorative — aria-hidden) ── */
-const outcomeGroup = el("g",{"aria-hidden":"true"},svg);
-el("line",{x1:Ox+60,y1:Oy,x2:Ox+95,y2:Oy,
-  stroke:"#595959","stroke-width":"1.5","marker-end":"url(#tip-out)"},outcomeGroup);
-const outText = el("text",{x:Ox+108,y:Oy+4,"font-size":"11",fill:"#595959","text-anchor":"start"},outcomeGroup);
-outText.textContent="Outcome";
+function buildSVG() {
+  svg.innerHTML = "";
+  nodeEls = {};
+  sharedObjPreview = null;
+  sharedOutPreview = null;
 
-/* ── Contradiction layer (aria-hidden — summary panel is authoritative) ── */
-const contraLayer = el("g",{"aria-hidden":"true"},svg);
+  const vbW = dualMode ? X2 + W : W;
+  svg.setAttribute("viewBox", `0 0 ${vbW} ${H}`);
 
-/* ── Node groups (interactive) ── */
-const nodeEls = {};
-for (const n of NODES) {
-  const g = el("g",{
-    role:"button",
-    tabindex:"0",
-    "aria-label":`${n.short}: empty. Activate to edit.`,
-    style:"cursor:pointer"
-  },svg);
+  // SVG title
+  const titleEl = el("title",{id:"svg-title"},svg);
+  titleEl.textContent = dualMode
+    ? "Engeström Activity System — two activity triangles with shared object"
+    : "Engeström Activity System Triangle — six interactive nodes: Tools, Subject, Object, Rules, Community, Division of Labour";
 
-  /* Custom focus ring (shown via CSS on :focus-visible) */
-  el("circle",{cx:n.x, cy:n.y, r:R+5, class:"node-focus-ring"},g);
+  // Defs & markers
+  const defs = el("defs",{},svg);
+  mkMarker(defs,"tip-end",0,false);
+  mkMarker(defs,"tip-start",7,true);
+  mkMarker(defs,"tip-out",0,false);
 
-  const circle = el("circle",{cx:n.x,cy:n.y,r:R,fill:"white",stroke:"#333","stroke-width":"1.5"},g);
-  const dot    = el("circle",{cx:n.x,cy:n.y,r:4,fill:"transparent","aria-hidden":"true"},g);
-  const t1     = el("text",{x:n.x+n.lx,y:n.y+n.ly,"text-anchor":n.anchor,
-                     "font-size":"12","font-weight":"600",fill:"#222","aria-hidden":"true"},g);
-  t1.textContent = n.lines[0];
-  let t2 = null;
-  if (n.lines[1]) {
-    t2 = el("text",{x:n.x+n.lx,y:n.y+n.ly2,"text-anchor":n.anchor,
-                    "font-size":"12","font-weight":"600",fill:"#222","aria-hidden":"true"},g);
-    t2.textContent = n.lines[1];
+  // Draw edges for one system
+  function drawEdges(nodes, edges) {
+    const g = el("g",{"aria-hidden":"true"},svg);
+    for (const [a,b] of edges) {
+      const na=nodes.find(n=>n.id===a), nb=nodes.find(n=>n.id===b);
+      const s=shorten(na.x,na.y,nb.x,nb.y);
+      el("line",{x1:s.x1,y1:s.y1,x2:s.x2,y2:s.y2,
+        stroke:"#333","stroke-width":"1.5",
+        "marker-start":"url(#tip-start)","marker-end":"url(#tip-end)"},g);
+    }
   }
-  const tp = el("text",{
-    x:n.x+n.lx,
-    y:n.y+(n.ly<0 ? n.ly-14 : n.ly2 ? n.ly2+14 : n.ly+14),
-    "text-anchor":n.anchor,"font-size":"10",fill:"#555","font-style":"italic","aria-hidden":"true"
-  },g);
 
-  nodeEls[n.id] = {g, circle, dot, t1, t2, tp};
+  drawEdges(NODES, EDGES);
+  if (dualMode) drawEdges(NODES2, EDGES2);
 
-  g.addEventListener("click",    ()  => activateNode(n.id));
-  g.addEventListener("keydown",  (e) => { if(e.key==="Enter"||e.key===" "){ e.preventDefault(); activateNode(n.id); } });
-  g.addEventListener("mouseenter",() => showTooltip(n));
-  g.addEventListener("mouseleave",() => hideTooltip());
+  if (dualMode) {
+    // Centre gap: x 580–680, centre at x=630
+    const cx = 630, cy = Oy;
+    const boxW = 80, boxH = 44;
+    const boxX = cx - boxW/2, boxY = cy - boxH/2;
+    const obj1 = NODES.find(n=>n.id==="object");
+    const obj2 = NODES2.find(n=>n.id==="object_2");
+
+    // Decorative connecting arrows
+    const centreDecor = el("g",{"aria-hidden":"true"},svg);
+    el("line",{x1:obj1.x+R+GAP+2,y1:cy,x2:boxX-4,y2:cy,
+      stroke:"#595959","stroke-width":"1.5","marker-end":"url(#tip-out)"},centreDecor);
+    el("line",{x1:obj2.x-R-GAP-2,y1:cy,x2:boxX+boxW+4,y2:cy,
+      stroke:"#595959","stroke-width":"1.5","marker-end":"url(#tip-out)"},centreDecor);
+    el("line",{x1:cx,y1:boxY-4,x2:cx,y2:boxY-58,
+      stroke:"#595959","stroke-width":"1.5","marker-end":"url(#tip-out)"},centreDecor);
+
+    // Shared Outcome interactive group (label + preview + click area)
+    const sharedOutGroup = el("g",{
+      role:"button", tabindex:"0",
+      "aria-label":"Shared Outcome(s): activate to edit",
+      style:"cursor:pointer"
+    },svg);
+    el("rect",{x:cx-46,y:boxY-74,width:96,height:52,rx:"4",
+      fill:"transparent",stroke:"none"},sharedOutGroup);
+    const _soL1 = el("text",{x:cx,y:boxY-52,"text-anchor":"middle","font-size":"10",fill:"#595959"},sharedOutGroup);
+    _soL1.textContent = "Shared";
+    const _soL2 = el("text",{x:cx,y:boxY-40,"text-anchor":"middle","font-size":"10",fill:"#595959"},sharedOutGroup);
+    _soL2.textContent = "Outcome(s)";
+    sharedOutPreview = el("text",{x:cx,y:boxY-28,"text-anchor":"middle","font-size":"9",fill:"#185FA5","font-style":"italic"},sharedOutGroup);
+    sharedOutGroup.addEventListener("click",   () => showSharedEditor("sharedOutcome"));
+    sharedOutGroup.addEventListener("keydown", e => { if(e.key==="Enter"||e.key===" "){ e.preventDefault(); showSharedEditor("sharedOutcome"); } });
+
+    // Shared Object interactive group (box + text + preview)
+    const sharedObjGroup = el("g",{
+      role:"button", tabindex:"0",
+      "aria-label":"Shared Object: activate to edit",
+      style:"cursor:pointer"
+    },svg);
+    el("rect",{x:boxX,y:boxY,width:boxW,height:boxH,rx:"8",
+      fill:"#fff",stroke:"#595959","stroke-width":"1.5"},sharedObjGroup);
+    const _sbL1 = el("text",{x:cx,y:cy-6,"text-anchor":"middle","font-size":"10","font-weight":"600",fill:"#444"},sharedObjGroup);
+    _sbL1.textContent = "Shared";
+    const _sbL2 = el("text",{x:cx,y:cy+6,"text-anchor":"middle","font-size":"10","font-weight":"600",fill:"#444"},sharedObjGroup);
+    _sbL2.textContent = "Object";
+    sharedObjPreview = el("text",{x:cx,y:cy+19,"text-anchor":"middle","font-size":"9",fill:"#185FA5","font-style":"italic"},sharedObjGroup);
+    sharedObjGroup.addEventListener("click",   () => showSharedEditor("sharedObject"));
+    sharedObjGroup.addEventListener("keydown", e => { if(e.key==="Enter"||e.key===" "){ e.preventDefault(); showSharedEditor("sharedObject"); } });
+
+  } else {
+    // Single mode: outcome arrow to the right of the object node
+    const obj = NODES.find(n=>n.id==="object");
+    const outcomeGroup = el("g",{"aria-hidden":"true"},svg);
+    el("line",{x1:obj.x+60,y1:obj.y,x2:obj.x+95,y2:obj.y,
+      stroke:"#595959","stroke-width":"1.5","marker-end":"url(#tip-out)"},outcomeGroup);
+    const outText = el("text",{x:obj.x+108,y:obj.y+4,"font-size":"11",fill:"#595959","text-anchor":"start"},outcomeGroup);
+    outText.textContent = "Outcome";
+  }
+
+  // Contradiction layer (above edges, below nodes)
+  contraLayer = el("g",{"aria-hidden":"true"},svg);
+
+  // Draw interactive node groups for one system
+  function drawNodes(nodes) {
+    for (const n of nodes) {
+      const isSys2   = n.id.endsWith("_2");
+      const sysLabel = dualMode ? (isSys2 ? " (System 2)" : " (System 1)") : "";
+      const g = el("g",{
+        role:"button", tabindex:"0",
+        "aria-label":`${n.short}${sysLabel}: empty. Activate to edit.`,
+        style:"cursor:pointer"
+      },svg);
+      el("circle",{cx:n.x,cy:n.y,r:R+5,class:"node-focus-ring"},g);
+      const circle = el("circle",{cx:n.x,cy:n.y,r:R,fill:"white",stroke:"#333","stroke-width":"1.5"},g);
+      const dot    = el("circle",{cx:n.x,cy:n.y,r:4,fill:"transparent","aria-hidden":"true"},g);
+      const t1     = el("text",{x:n.x+n.lx,y:n.y+n.ly,"text-anchor":n.anchor,
+                       "font-size":"12","font-weight":"600",fill:"#222","aria-hidden":"true"},g);
+      t1.textContent = n.lines[0];
+      let t2 = null;
+      if (n.lines[1]) {
+        t2 = el("text",{x:n.x+n.lx,y:n.y+n.ly2,"text-anchor":n.anchor,
+                        "font-size":"12","font-weight":"600",fill:"#222","aria-hidden":"true"},g);
+        t2.textContent = n.lines[1];
+      }
+      const tp = el("text",{
+        x:n.x+n.lx,
+        y:n.y+(n.ly<0 ? n.ly-14 : n.ly2 ? n.ly2+14 : n.ly+14),
+        "text-anchor":n.anchor,"font-size":"10",fill:"#555","font-style":"italic","aria-hidden":"true"
+      },g);
+      nodeEls[n.id] = {g, circle, dot, t1, t2, tp};
+      g.addEventListener("click",     ()  => activateNode(n.id));
+      g.addEventListener("keydown",   e   => { if(e.key==="Enter"||e.key===" "){ e.preventDefault(); activateNode(n.id); } });
+      g.addEventListener("mouseenter",()  => showTooltip(n));
+      g.addEventListener("mouseleave",()  => hideTooltip());
+    }
+  }
+
+  drawNodes(NODES);
+  if (dualMode) drawNodes(NODES2);
+
+  // Refresh visuals after rebuild
+  for (const n of allActiveNodes()) updateNodeVisual(n.id);
+  renderContradictions();
+  updateSharedPreviews();
 }
 
-/* ── Update aria-label on a node to reflect current state ── */
+/* ── Node aria-label ── */
 function updateNodeAriaLabel(id) {
-  const n   = NODES.find(x=>x.id===id);
-  const {g} = nodeEls[id];
-  const val = vals[id].trim();
+  const n    = nodeDef(id);
+  const {g}  = nodeEls[id];
+  const isSys2   = id.endsWith("_2");
+  const sysLabel = dualMode ? (isSys2 ? " (System 2)" : " (System 1)") : "";
+  const store = storeFor(id);
+  const val   = store[baseId(id)].trim();
   let label;
   if (contraMode) {
     if (contraFirst === id) {
-      label = `${n.short} selected. Activate again for a primary contradiction, or activate another node for a secondary contradiction.`;
+      label = `${n.short}${sysLabel} selected. Activate again for a primary contradiction, or activate another node for a secondary contradiction.`;
     } else {
       label = val
-        ? `${n.short}: ${val}. Activate to select for contradiction.`
-        : `${n.short}: empty. Activate to select for contradiction.`;
+        ? `${n.short}${sysLabel}: ${val}. Activate to select for contradiction.`
+        : `${n.short}${sysLabel}: empty. Activate to select for contradiction.`;
     }
   } else {
     label = val
-      ? `${n.short}: ${val}. Activate to edit.`
-      : `${n.short}: empty. Activate to edit.`;
+      ? `${n.short}${sysLabel}: ${val}. Activate to edit.`
+      : `${n.short}${sysLabel}: empty. Activate to edit.`;
   }
   g.setAttribute("aria-label", label);
 }
 
-/* ── Update node visuals + aria-label ── */
+/* ── Node visuals ── */
 function updateNodeVisual(id) {
-  const n = NODES.find(x=>x.id===id);
   const {circle,dot,t1,t2,tp} = nodeEls[id];
-  const filled        = vals[id].trim();
+  const store  = storeFor(id);
+  const bid    = baseId(id);
+  const filled = store[bid].trim();
   const isActive      = activeId===id;
   const isContraFirst = contraMode && contraFirst===id && contraPromptNodes===null;
-  const c = COL[id];
+  const c = COL[bid];
   circle.setAttribute("stroke",       isContraFirst?"#b45309": isActive||filled?c:"#333");
   circle.setAttribute("stroke-width", isActive||isContraFirst?"2.5":"1.5");
   dot.setAttribute("fill",            filled?c:"transparent");
@@ -553,12 +679,13 @@ function updateNodeVisual(id) {
   updateNodeAriaLabel(id);
 }
 
-/* ── Activate a node (edit or contradiction mode) ── */
+/* ── Activate a node ── */
 function activateNode(id) {
   if (contraMode) { handleContraNodeClick(id); return; }
+  activeSystem = id.endsWith("_2") ? 2 : 1;
   if (activeId===id) { activeId=null; hideEditor(); }
   else               { activeId=id;  showEditor(id); }
-  for (const n of NODES) updateNodeVisual(n.id);
+  for (const n of allActiveNodes()) updateNodeVisual(n.id);
 }
 
 /* ── Editor ── */
@@ -569,30 +696,71 @@ const edPrompt   = document.getElementById("ed-prompt");
 const edInput    = document.getElementById("ed-input");
 
 function showEditor(id) {
-  const n = NODES.find(x=>x.id===id);
-  editor.style.display = "block";
-  editor.style.border  = `2px solid ${COL[id]}`;
-  edLabel.style.color  = COL[id];
-  edLabel.textContent  = n.label;
+  const bid   = baseId(id);
+  const n     = NODES.find(x=>x.id===bid);
+  const store = storeFor(id);
+  const sysLabel = dualMode ? ` — System ${activeSystem}` : "";
+  editor.style.display   = "block";
+  editor.style.border    = `2px solid ${COL[bid]}`;
+  edLabel.style.color    = COL[bid];
+  edLabel.textContent    = n.label + sysLabel;
   edGuidance.textContent = n.guidance;
   edPrompt.textContent   = n.prompt;
-  edInput.value = vals[id];
+  edInput.value = store[bid];
   edInput.focus();
-  edInput.oninput = () => { vals[id]=edInput.value; updateNodeVisual(id); updateAnalyseBtn(); updateSummary(); };
+  edInput.oninput = () => { store[bid]=edInput.value; updateNodeVisual(id); updateAnalyseBtn(); updateSummary(); };
 }
+
+function showSharedEditor(which) {
+  const isSO = which === "sharedObject";
+  editor.style.display   = "block";
+  editor.style.border    = "2px solid #595959";
+  edLabel.style.color    = "#595959";
+  edLabel.textContent    = isSO ? "Shared Object" : "Shared Outcome(s)";
+  edGuidance.textContent = isSO
+    ? "What do both activity systems share as their common object or goal?"
+    : "What is the shared outcome produced by both activity systems working together?";
+  edPrompt.textContent   = isSO
+    ? "What is the shared object or goal connecting both systems?"
+    : "What outcome do both systems jointly produce?";
+  edInput.value = isSO ? sharedObject : sharedOutcome;
+  edInput.focus();
+  edInput.oninput = () => {
+    if (isSO) sharedObject = edInput.value;
+    else      sharedOutcome = edInput.value;
+    updateSharedPreviews();
+    updateSummary();
+  };
+  activeId = null;
+  for (const n of allActiveNodes()) updateNodeVisual(n.id);
+}
+
+function updateSharedPreviews() {
+  if (sharedObjPreview) {
+    const p = sharedObject.trim();
+    sharedObjPreview.textContent = p ? (p.length>12 ? p.slice(0,10)+"…" : p) : "";
+  }
+  if (sharedOutPreview) {
+    const p = sharedOutcome.trim();
+    sharedOutPreview.textContent = p ? (p.length>12 ? p.slice(0,10)+"…" : p) : "";
+  }
+}
+
 function hideEditor() { editor.style.display = "none"; }
 
-/* ── Tooltip (mouse only) ── */
+/* ── Tooltip ── */
 const tooltip = document.getElementById("tooltip");
 function showTooltip(n) {
   if (activeId) return;
-  tooltip.style.display  = "block";
-  tooltip.style.borderColor = COL[n.id];
-  tooltip.innerHTML = `<strong style="color:${COL[n.id]}">${n.short}</strong><br>${n.guidance}`;
-  const ww = document.getElementById("svg-wrap").offsetWidth;
-  const hh = ww*(H/W);
-  let left = (n.x/W)*ww+(n.lx||0)-90;
-  let top  = (n.y/H)*hh+(n.ly<0?-90:20);
+  const bid = baseId(n.id);
+  tooltip.style.display    = "block";
+  tooltip.style.borderColor = COL[bid];
+  tooltip.innerHTML = `<strong style="color:${COL[bid]}">${n.short}</strong><br>${n.guidance}`;
+  const vbW = dualMode ? X2+W : W;
+  const ww  = document.getElementById("svg-wrap").offsetWidth;
+  const hh  = ww*(H/vbW);
+  let left  = (n.x/vbW)*ww+(n.lx||0)-90;
+  let top   = (n.y/H)*hh+(n.ly<0?-90:20);
   left = Math.max(0,Math.min(left,ww-190));
   top  = Math.max(0,top);
   tooltip.style.left = left+"px";
@@ -600,17 +768,18 @@ function showTooltip(n) {
 }
 function hideTooltip() { tooltip.style.display = "none"; }
 
-/* ── Screen-reader live announcer ── */
+/* ── Screen-reader announcer ── */
 const liveRegion = document.getElementById("live-region");
 function announce(msg) {
   liveRegion.textContent = "";
   setTimeout(()=>{ liveRegion.textContent = msg; }, 100);
 }
 
-/* ── Analyse button + modal ── */
+/* ── Analyse button ── */
 const analyseBtn = document.getElementById("analyse-btn");
 function updateAnalyseBtn() {
-  const has = Object.values(vals).some(v=>v.trim());
+  const has = Object.values(vals).some(v=>v.trim()) ||
+              (dualMode && Object.values(vals2).some(v=>v.trim()));
   analyseBtn.textContent = has ? "Analyse the system" : "Explain the model";
 }
 
@@ -648,14 +817,20 @@ document.getElementById("modal-close").addEventListener("click", closeModal);
 modalOverlay.addEventListener("click", e => { if (e.target===modalOverlay) closeModal(); });
 
 analyseBtn.addEventListener("click", () => {
-  const has = Object.values(vals).some(v=>v.trim());
+  const has = Object.values(vals).some(v=>v.trim()) ||
+              (dualMode && Object.values(vals2).some(v=>v.trim()));
   if (!has) {
     showModal("About the model",
       "Engeström's Activity System has six components:\n\n• Tools — what mediates the activity\n• Subject — who does it\n• Object — what is being transformed\n• Rules — norms and conventions\n• Community — others who share the object\n• Division of Labour — how work is distributed\n\nClick any node on the triangle to fill it in, then click Analyse for a reading of your system.");
   } else {
-    const lines = NODES.map(n=>`• ${n.label}: ${vals[n.id]||"(empty)"}`).join("\n");
-    showModal("Activity system summary",
-      lines + "\n\nUse the notes panel to record observations, tensions, or contradictions you notice between components.");
+    const s1lines = NODES.map(n=>`• ${n.label}: ${vals[n.id]||"(empty)"}`).join("\n");
+    const body = dualMode
+      ? "System 1:\n" + s1lines +
+        "\n\nSystem 2:\n" + NODES.map(n=>`• ${n.label}: ${vals2[n.id]||"(empty)"}`).join("\n") +
+        (sharedObject  ? `\n\nShared Object: ${sharedObject}` : "") +
+        (sharedOutcome ? `\nShared Outcome(s): ${sharedOutcome}` : "")
+      : s1lines + "\n\nUse the notes panel to record observations, tensions, or contradictions you notice between components.";
+    showModal("Activity system summary", body);
   }
 });
 
@@ -665,29 +840,32 @@ let   contraMode        = false;
 let   contraFirst       = null;
 let   contraPromptNodes = null;
 
-const contraBtn      = document.getElementById("contra-btn");
-const contraEditor   = document.getElementById("contra-editor");
-const contraLabel    = document.getElementById("contra-label");
-const contraTypeDesc = document.getElementById("contra-type-desc");
-const contraInput    = document.getElementById("contra-input");
-const contraSaveBtn  = document.getElementById("contra-save-btn");
-const contraCancelBtn= document.getElementById("contra-cancel-btn");
-const hintEl         = document.getElementById("hint-text");
+const contraBtn       = document.getElementById("contra-btn");
+const contraEditor    = document.getElementById("contra-editor");
+const contraLabel     = document.getElementById("contra-label");
+const contraTypeDesc  = document.getElementById("contra-type-desc");
+const contraInput     = document.getElementById("contra-input");
+const contraSaveBtn   = document.getElementById("contra-save-btn");
+const contraCancelBtn = document.getElementById("contra-cancel-btn");
+const hintEl          = document.getElementById("hint-text");
 
 function renderContradictions() {
   while (contraLayer.firstChild) contraLayer.removeChild(contraLayer.firstChild);
+  const allNodes = [...NODES, ...NODES2];
   for (const c of contradictions) {
     if (c.type==="primary") {
-      const n = NODES.find(x=>x.id===c.nodes[0]);
+      const n = allNodes.find(x=>x.id===c.nodes[0]);
+      if (!n) continue;
       el("circle",{cx:n.x, cy:n.y, r:R+7, fill:"none",
         stroke:"#b45309","stroke-width":"2","stroke-dasharray":"3,2.5"}, contraLayer);
     } else {
-      const na=NODES.find(x=>x.id===c.nodes[0]), nb=NODES.find(x=>x.id===c.nodes[1]);
+      const na=allNodes.find(x=>x.id===c.nodes[0]), nb=allNodes.find(x=>x.id===c.nodes[1]);
+      if (!na||!nb) continue;
       const mx=(na.x+nb.x)/2, my=(na.y+nb.y)/2;
       el("line",{x1:na.x,y1:na.y,x2:nb.x,y2:nb.y,
         stroke:"#c0392b","stroke-width":"2","stroke-dasharray":"6,3",opacity:"0.8"}, contraLayer);
       const t = el("text",{x:mx,y:my-7,"text-anchor":"middle","font-size":"13",fill:"#c0392b"}, contraLayer);
-      t.textContent="⚡";
+      t.textContent = "⚡";
     }
   }
 }
@@ -709,7 +887,7 @@ function setContraMode(on) {
     hintEl.textContent = "Click a node to edit it. Hover for guidance.";
     guide.style.display = "none";
   }
-  for (const n of NODES) updateNodeVisual(n.id);
+  for (const n of allActiveNodes()) updateNodeVisual(n.id);
 }
 contraBtn.addEventListener("click", () => setContraMode(!contraMode));
 
@@ -717,8 +895,8 @@ function handleContraNodeClick(id) {
   if (contraPromptNodes!==null) return;
   if (contraFirst===null) {
     contraFirst = id;
-    for (const n of NODES) updateNodeVisual(n.id);
-    announce(`${NODES.find(x=>x.id===id).short} selected. Activate the same node again for a primary contradiction, or another node for a secondary contradiction.`);
+    for (const n of allActiveNodes()) updateNodeVisual(n.id);
+    announce(`${nodeDef(id).short} selected. Activate the same node again for a primary contradiction, or another node for a secondary contradiction.`);
   } else if (contraFirst===id) {
     showContraPrompt("primary",[id]);
   } else {
@@ -730,11 +908,11 @@ function showContraPrompt(type, nodes) {
   contraPromptNodes = nodes;
   contraEditor.style.display = "block";
   if (type==="primary") {
-    const n = NODES.find(x=>x.id===nodes[0]);
+    const n = nodeDef(nodes[0]);
     contraLabel.textContent    = `⚡ Primary Contradiction — ${n.short}`;
     contraTypeDesc.textContent = "A tension within this single component. Describe what is pulling against itself.";
   } else {
-    const na=NODES.find(x=>x.id===nodes[0]), nb=NODES.find(x=>x.id===nodes[1]);
+    const na=nodeDef(nodes[0]), nb=nodeDef(nodes[1]);
     contraLabel.textContent    = `⚡ Secondary Contradiction — ${na.short} ↔ ${nb.short}`;
     contraTypeDesc.textContent = "A tension between these two components. Describe how they pull in different directions.";
   }
@@ -747,10 +925,10 @@ function saveContradiction(type, nodes) {
   const desc = contraInput.value.trim();
   contradictions.push({type, nodes, description:desc});
   renderContradictions();
-  const na = NODES.find(x=>x.id===nodes[0]);
+  const na  = nodeDef(nodes[0]);
   const msg = type==="primary"
     ? `Primary contradiction saved for ${na.short}.`
-    : `Secondary contradiction saved between ${na.short} and ${NODES.find(x=>x.id===nodes[1]).short}.`;
+    : `Secondary contradiction saved between ${na.short} and ${nodeDef(nodes[1]).short}.`;
   announce(msg);
   cancelContraPrompt();
   updateSummary();
@@ -760,51 +938,90 @@ function cancelContraPrompt() {
   contraPromptNodes = null;
   contraFirst = null;
   contraEditor.style.display = "none";
-  for (const n of NODES) updateNodeVisual(n.id);
+  for (const n of allActiveNodes()) updateNodeVisual(n.id);
 }
 contraCancelBtn.addEventListener("click", cancelContraPrompt);
 
 /* ── Live summary ── */
-const summaryBody = document.getElementById("summary-body");
+const summaryBody    = document.getElementById("summary-body");
+const summaryHeading = document.getElementById("summary-heading");
 
-function updateSummary() {
-  summaryBody.innerHTML = "";
-  for (const n of NODES) {
+function renderSummarySection(nodes, store, title) {
+  if (title) {
+    const hdr = document.createElement("div");
+    hdr.className = "sr-sys-heading";
+    hdr.textContent = title;
+    summaryBody.appendChild(hdr);
+  }
+  for (const n of nodes) {
     const row = document.createElement("div");
     row.className = "sr-row";
     const lbl = document.createElement("div");
-    lbl.className  = "sr-label";
+    lbl.className   = "sr-label";
     lbl.textContent = n.short;
     const val = document.createElement("div");
-    if (vals[n.id].trim()) {
-      val.className  = "sr-value";
-      val.textContent = vals[n.id];
+    if (store[n.id].trim()) {
+      val.className   = "sr-value";
+      val.textContent = store[n.id];
     } else {
-      val.className  = "sr-empty";
+      val.className   = "sr-empty";
       val.textContent = "—";
     }
     row.appendChild(lbl);
     row.appendChild(val);
     summaryBody.appendChild(row);
   }
+}
+
+function addHr() {
+  const hr = document.createElement("hr");
+  hr.className = "sr-divider";
+  hr.setAttribute("aria-hidden","true");
+  summaryBody.appendChild(hr);
+}
+
+function updateSummary() {
+  summaryBody.innerHTML = "";
+  if (dualMode) {
+    renderSummarySection(NODES, vals,  "System 1");
+    addHr();
+    renderSummarySection(NODES, vals2, "System 2");
+    addHr();
+    // Shared elements
+    const shHdr = document.createElement("div");
+    shHdr.className = "sr-sys-heading";
+    shHdr.textContent = "Shared elements";
+    summaryBody.appendChild(shHdr);
+    for (const [label, value] of [["Shared Object", sharedObject],["Shared Outcome(s)", sharedOutcome]]) {
+      const row = document.createElement("div"); row.className = "sr-row";
+      const lbl = document.createElement("div"); lbl.className = "sr-label"; lbl.textContent = label;
+      const val = document.createElement("div");
+      if (value.trim()) { val.className = "sr-value"; val.textContent = value; }
+      else               { val.className = "sr-empty"; val.textContent = "—"; }
+      row.appendChild(lbl); row.appendChild(val);
+      summaryBody.appendChild(row);
+    }
+  } else {
+    renderSummarySection(NODES, vals, null);
+  }
+  // Contradictions (all systems)
   if (contradictions.length) {
-    const hr = document.createElement("hr");
-    hr.className = "sr-divider";
-    hr.setAttribute("aria-hidden","true");
-    summaryBody.appendChild(hr);
+    addHr();
     const heading = document.createElement("div");
-    heading.className  = "sr-label";
+    heading.className   = "sr-label";
     heading.textContent = "Contradictions";
     summaryBody.appendChild(heading);
+    const allNodes = [...NODES, ...NODES2];
     for (const c of contradictions) {
-      const na = NODES.find(x=>x.id===c.nodes[0]);
+      const na = allNodes.find(x=>x.id===c.nodes[0]);
+      if (!na) continue;
       const div = document.createElement("div");
       div.className = "sr-contra";
       if (c.type==="primary") {
         div.textContent = `⚡ Primary — ${na.short}${c.description ? ": "+c.description : ""}`;
       } else {
-        const nb = NODES.find(x=>x.id===c.nodes[1]);
-        div.textContent = `⚡ Secondary — ${na.short} ↔ ${nb.short}${c.description ? ": "+c.description : ""}`;
+        const nb = allNodes.find(x=>x.id===c.nodes[1]);
+        div.textContent = `⚡ Secondary — ${na.short} ↔ ${nb?nb.short:"?"}${c.description ? ": "+c.description : ""}`;
       }
       summaryBody.appendChild(div);
     }
@@ -817,7 +1034,7 @@ copyBtn.addEventListener("click", () => {
   navigator.clipboard.writeText(exportText()).then(() => {
     copyBtn.textContent = "Copied!";
     announce("Summary copied to clipboard.");
-    setTimeout(()=>{ copyBtn.textContent = "Copy summary"; }, 1800);
+    setTimeout(()=>{ copyBtn.textContent = "Copy summary and notes"; }, 1800);
   });
 });
 
@@ -846,47 +1063,117 @@ document.addEventListener("keydown", e   => { if(e.key==="Escape") setExportOpen
 
 /* ── Export data ── */
 function buildExportData() {
+  const notes = document.getElementById("notes-input").value.trim();
+  if (!dualMode) {
+    return {
+      nodes: NODES.map(n=>({id:n.id, label:n.label, value:vals[n.id]})),
+      contradictions: contradictions.map(c=>({
+        type: c.type,
+        nodes: c.nodes.map(id=>NODES.find(n=>n.id===id)?.short||id),
+        description: c.description,
+      })),
+      notes,
+    };
+  }
   return {
-    nodes: NODES.map(n=>({id:n.id, label:n.label, value:vals[n.id]})),
-    contradictions: contradictions.map(c=>({
-      type: c.type,
-      nodes: c.nodes.map(id=>NODES.find(n=>n.id===id).short),
-      description: c.description,
-    })),
-    notes: document.getElementById("notes-input").value.trim(),
+    system1: {
+      nodes: NODES.map(n=>({id:n.id, label:n.label, value:vals[n.id]})),
+      contradictions: contradictions.filter(c=>!c.nodes[0].endsWith("_2")).map(c=>({
+        type: c.type,
+        nodes: c.nodes.map(id=>NODES.find(n=>n.id===id)?.short||id),
+        description: c.description,
+      })),
+    },
+    system2: {
+      nodes: NODES.map(n=>({id:n.id, label:n.label, value:vals2[n.id]})),
+      contradictions: contradictions.filter(c=>c.nodes[0].endsWith("_2")).map(c=>({
+        type: c.type,
+        nodes: c.nodes.map(id=>{ const b=baseId(id); return NODES.find(n=>n.id===b)?.short||b; }),
+        description: c.description,
+      })),
+    },
+    sharedObject,
+    sharedOutcome,
+    notes,
   };
 }
-function exportText() {
-  const d = buildExportData();
-  const lines = ["Engeström Activity System Analysis","=".repeat(36),""];
-  for (const n of d.nodes) lines.push(`${n.label}:\n${n.value||"(empty)"}\n`);
-  if (d.contradictions.length) {
+
+function exportContras(contras) {
+  const lines = [];
+  if (contras.length) {
     lines.push("Contradictions","-".repeat(14));
-    for (const c of d.contradictions) {
+    for (const c of contras) {
       const tag = c.type==="primary"?"Primary contradiction":"Secondary contradiction";
       const who = c.nodes.length===1?c.nodes[0]:`${c.nodes[0]} ↔ ${c.nodes[1]}`;
       lines.push(`[${tag}] ${who}${c.description?"\n"+c.description:""}\n`);
     }
   }
+  return lines;
+}
+
+function exportText() {
+  const d = buildExportData();
+  const lines = ["Engeström Activity System Analysis","=".repeat(36),""];
+  if (dualMode) {
+    lines.push("System 1","-".repeat(8),"");
+    for (const n of d.system1.nodes) lines.push(`${n.label}:\n${n.value||"(empty)"}\n`);
+    lines.push(...exportContras(d.system1.contradictions));
+    lines.push("","System 2","-".repeat(8),"");
+    for (const n of d.system2.nodes) lines.push(`${n.label}:\n${n.value||"(empty)"}\n`);
+    lines.push(...exportContras(d.system2.contradictions));
+    lines.push("","Shared elements","-".repeat(15),"");
+    lines.push(`Shared Object:\n${d.sharedObject||"(empty)"}\n`);
+    lines.push(`Shared Outcome(s):\n${d.sharedOutcome||"(empty)"}\n`);
+  } else {
+    for (const n of d.nodes) lines.push(`${n.label}:\n${n.value||"(empty)"}\n`);
+    lines.push(...exportContras(d.contradictions));
+  }
   if (d.notes) lines.push("Notes","-".repeat(14),d.notes);
   return lines.join("\n");
 }
-function exportMarkdown() {
-  const d = buildExportData();
-  const lines = ["# Engeström Activity System Analysis",""];
-  lines.push("| Component | Content |","|-----------|---------|");
-  for (const n of d.nodes) lines.push(`| **${n.label}** | ${n.value||"—"} |`);
-  if (d.contradictions.length) {
-    lines.push("","## Contradictions","");
-    for (const c of d.contradictions) {
+
+function exportMarkdownContras(contras) {
+  const lines = [];
+  if (contras.length) {
+    lines.push("","### Contradictions","");
+    for (const c of contras) {
       const tag = c.type==="primary"?"Primary contradiction":"Secondary contradiction";
       const who = c.nodes.length===1?c.nodes[0]:`${c.nodes[0]} ↔ ${c.nodes[1]}`;
       lines.push(`- **${tag} — ${who}**${c.description?": "+c.description:""}`);
     }
   }
+  return lines;
+}
+
+function exportMarkdown() {
+  const d = buildExportData();
+  const lines = ["# Engeström Activity System Analysis",""];
+  if (dualMode) {
+    lines.push("## System 1","","| Component | Content |","|-----------|---------|");
+    for (const n of d.system1.nodes) lines.push(`| **${n.label}** | ${n.value||"—"} |`);
+    lines.push(...exportMarkdownContras(d.system1.contradictions));
+    lines.push("","## System 2","","| Component | Content |","|-----------|---------|");
+    for (const n of d.system2.nodes) lines.push(`| **${n.label}** | ${n.value||"—"} |`);
+    lines.push(...exportMarkdownContras(d.system2.contradictions));
+    lines.push("","## Shared Elements","");
+    lines.push(`| **Shared Object** | ${d.sharedObject||"—"} |`);
+    lines.push(`| **Shared Outcome(s)** | ${d.sharedOutcome||"—"} |`);
+  } else {
+    lines.push("| Component | Content |","|-----------|---------|");
+    for (const n of d.nodes) lines.push(`| **${n.label}** | ${n.value||"—"} |`);
+    if (d.contradictions.length) {
+      lines.push("","## Contradictions","");
+      for (const c of d.contradictions) {
+        const tag = c.type==="primary"?"Primary contradiction":"Secondary contradiction";
+        const who = c.nodes.length===1?c.nodes[0]:`${c.nodes[0]} ↔ ${c.nodes[1]}`;
+        lines.push(`- **${tag} — ${who}**${c.description?": "+c.description:""}`);
+      }
+    }
+  }
   if (d.notes) lines.push("","## Notes","",d.notes);
   return lines.join("\n");
 }
+
 function exportJSON() { return JSON.stringify(buildExportData(),null,2); }
 function download(content,filename,mime) {
   const a = document.createElement("a");
@@ -901,6 +1188,31 @@ exportMenu.addEventListener("click", e => {
   if (fmt==="json")     download(exportJSON(),    "activity-system.json","application/json");
   setExportOpen(false);
   exportBtn.focus();
+});
+
+/* ── Dual mode toggle ── */
+const dualBtn = document.getElementById("dual-btn");
+dualBtn.addEventListener("click", () => {
+  dualMode = !dualMode;
+  activeId = null;
+  activeSystem = 1;
+  // Reset contra state directly (buildSVG refreshes visuals)
+  contraMode = false;
+  contraFirst = null;
+  contraPromptNodes = null;
+  contraEditor.style.display = "none";
+  contraBtn.classList.remove("btn-contra-active");
+  contraBtn.setAttribute("aria-pressed", "false");
+  document.getElementById("contra-guide").style.display = "none";
+  hintEl.textContent = "Click a node to edit it. Hover for guidance.";
+  hideEditor();
+  dualBtn.setAttribute("aria-pressed", String(dualMode));
+  dualBtn.textContent = dualMode ? "Show one system" : "Show two systems";
+  document.getElementById("app").classList.toggle("dual-active", dualMode);
+  summaryHeading.textContent = dualMode ? "Summary — Two Systems" : "Summary";
+  buildSVG();
+  updateSummary();
+  announce(dualMode ? "Two-system view enabled." : "Single-system view enabled.");
 });
 
 /* ── Legal modal ── */
@@ -925,15 +1237,15 @@ function handleLegalKey(e) {
   if (e.key !== "Tab") return;
   const focusable = [...legalBox.querySelectorAll('button, a[href], [tabindex="0"]')].filter(el => !el.disabled);
   if (!focusable.length) return;
-  const first = focusable[0], last = focusable[focusable.length - 1];
-  if (e.shiftKey && document.activeElement === first)  { e.preventDefault(); last.focus(); }
-  else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+  const first = focusable[0], last = focusable[focusable.length-1];
+  if (e.shiftKey && document.activeElement===first)      { e.preventDefault(); last.focus(); }
+  else if (!e.shiftKey && document.activeElement===last) { e.preventDefault(); first.focus(); }
 }
 legalClose.addEventListener("click", closeLegal);
-legalOverlay.addEventListener("click", e => { if (e.target === legalOverlay) closeLegal(); });
+legalOverlay.addEventListener("click", e => { if (e.target===legalOverlay) closeLegal(); });
 
 /* ── Init ── */
-for (const n of NODES) updateNodeVisual(n.id);
+buildSVG();
 updateSummary();
 </script>
 </body>
