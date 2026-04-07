@@ -4,7 +4,7 @@ An interactive, browser-based tool for analysing human activity using Engeström
 
 **Live demo:** [https://jourde.github.io/chat/interface.html](https://jourde.github.io/chat/interface.html)
 
----
+--
 
 ## What it does
 
@@ -19,7 +19,7 @@ The tool lets you map and analyse an activity system by filling in six interconn
 | **Community** | Others who share a stake in the activity |
 | **Division of Labour** | How tasks, roles and power are distributed |
 
-You can also identify **contradictions** — internal tensions within or between components — and export the full analysis.
+You can also identify **contradictions** at three levels — tensions within a component, between components of the same system, or across two systems — and export the full analysis.
 
 ---
 
@@ -27,7 +27,10 @@ You can also identify **contradictions** — internal tensions within or between
 
 - **Interactive SVG diagram** — click any node to open a guided editor with prompts for each component
 - **Two-system view** — toggle between a single activity system and a dual-system view showing two systems alongside a Shared Object and Shared Outcome(s), following Engeström's third-generation CHAT framework
-- **Contradiction tracking** — mark primary contradictions (within a component) and secondary contradictions (between two components), with visual indicators on the diagram
+- **Three levels of contradiction tracking** — with visual indicators on the diagram:
+  - ⚡ **Inner** — a tension within a single component (e.g. a tool that is both required and unusable)
+  - ⚡ **Secondary** — a tension between two components within the same system (e.g. Rules clashing with the Object)
+  - ↔ **Inter-systemic** — a tension between the two activity systems (dual-system view only)
 - **Live summary panel** — real-time display of all component values and contradictions as you type
 - **Additional notes** — free-text field for observations and reflections
 - **Export** — download the full analysis as plain text, Markdown, or JSON
@@ -42,6 +45,14 @@ This tool is based on **Engeström's Activity System** (1987, 2001), a model fro
 
 The **two-system view** implements the third-generation CHAT framework, which places two activity systems in dialogue around a shared object, enabling analysis of inter-organisational and boundary-crossing activity.
 
+**Contradictions** are central to CHAT analysis. The tool supports three levels:
+
+| Level | Label | Description |
+|---|---|---|
+| Level 1 | Inner | Tension within a single component |
+| Level 2 | Secondary | Tension between two components of the same system |
+| Level 4 | Inter-systemic | Tension between two activity systems |
+
 **Key references:**
 - Engeström, Y. (1987). *Learning by expanding: An activity-theoretical approach to developmental research.* Orienta-Konsultit.
 - Engeström, Y. (2001). Expansive learning at work: Toward an activity theoretical reconceptualization. *Journal of Education and Work, 14*(1), 133–156.
@@ -55,7 +66,9 @@ No installation or build step required. The tool is a single self-contained HTML
 1. Download `Engeström_Activity_System_Analyser.html`
 2. Open it in any modern browser
 3. Click a node on the triangle to begin filling in your activity system
-4. Use **⚡ Add a contradiction** to mark tensions between components
+4. Use **⚡ Add a contradiction** to mark tensions:
+   - Click the **same node twice** for an inner contradiction
+   - Click **two different nodes in the same system** for a secondary contradiction
 5. Export or copy your analysis when done
 
 To use the two-system view:
@@ -63,6 +76,7 @@ To use the two-system view:
 1. Click **Show two systems**
 2. Click nodes in either triangle to edit System 1 or System 2 independently
 3. Click the **Shared Object** box and **Shared Outcome(s)** label in the centre to describe what connects both systems
+4. In contradiction mode, click **one node in System 1 and one in System 2** to mark an inter-systemic contradiction
 
 ---
 
@@ -81,3 +95,4 @@ Any modern browser (Chrome, Firefox, Safari, Edge). No polyfills or transpilatio
 ## Licence
 
 MIT Licence — François Jourde (2026)
+
