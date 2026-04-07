@@ -2,7 +2,7 @@
 
 An interactive, browser-based tool for analysing human activity using Engeström's Activity System model, grounded in cultural-historical activity theory (CHAT).
 
-**Live demo:** [jourde.github.io/…](#) *(update with your GitHub Pages URL)*
+**Live demo:** [https://jourde.github.io/chat/interface.html](https://jourde.github.io/chat/interface.html)
 
 ---
 
