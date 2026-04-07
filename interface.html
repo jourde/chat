@@ -91,6 +91,7 @@
   .sr-empty { color: #767676; font-style: italic; }
   .sr-divider { border: none; border-top: 1px solid #bbb; margin: 2px 0; }
   .sr-contra { font-size: 0.75rem; line-height: 1.5; padding: 5px 9px; border-radius: 7px; background: #fef9ec; border-left: 3px solid #b45309; }
+  .sr-contra-inter { font-size: 0.75rem; line-height: 1.5; padding: 5px 9px; border-radius: 7px; background: #f5f3ff; border-left: 3px solid #7c3aed; }
 
   /* ── Notes row ── */
   #notes-row { border-top: 1px solid #c4c4c4; padding: 9px 11px; }
@@ -305,8 +306,13 @@
       </div>
       <div class="cg-row">
         <span class="cg-type">⚡ Secondary Contradiction</span> — a tension <strong>between two components</strong>.<br>
-        Click one node, then a different node to mark the pair.<br>
+        Click one node, then a different node in the same system.<br>
         <span class="cg-example">Example: Rules demand standardised assessment, but the Object is personalised learning.</span>
+      </div>
+      <div class="cg-row" id="cg-intersys" style="display:none">
+        <span class="cg-type">↔ Inter-systemic Contradiction</span> — a tension <strong>between the two activity systems</strong>.<br>
+        Click one node in System 1, then a node in System 2.<br>
+        <span class="cg-example">Example: System 1's rules clash with System 2's division of labour.</span>
       </div>
     </div>
 
@@ -858,7 +864,7 @@ function renderContradictions() {
       if (!n) continue;
       el("circle",{cx:n.x, cy:n.y, r:R+7, fill:"none",
         stroke:"#b45309","stroke-width":"2","stroke-dasharray":"3,2.5"}, contraLayer);
-    } else {
+    } else if (c.type==="secondary") {
       const na=allNodes.find(x=>x.id===c.nodes[0]), nb=allNodes.find(x=>x.id===c.nodes[1]);
       if (!na||!nb) continue;
       const mx=(na.x+nb.x)/2, my=(na.y+nb.y)/2;
@@ -866,6 +872,15 @@ function renderContradictions() {
         stroke:"#c0392b","stroke-width":"2","stroke-dasharray":"6,3",opacity:"0.8"}, contraLayer);
       const t = el("text",{x:mx,y:my-7,"text-anchor":"middle","font-size":"13",fill:"#c0392b"}, contraLayer);
       t.textContent = "⚡";
+    } else {
+      // intersystemic — purple long-dashed line + ↔ at midpoint
+      const na=allNodes.find(x=>x.id===c.nodes[0]), nb=allNodes.find(x=>x.id===c.nodes[1]);
+      if (!na||!nb) continue;
+      const mx=(na.x+nb.x)/2, my=(na.y+nb.y)/2;
+      el("line",{x1:na.x,y1:na.y,x2:nb.x,y2:nb.y,
+        stroke:"#7c3aed","stroke-width":"2","stroke-dasharray":"8,4",opacity:"0.75"}, contraLayer);
+      const t = el("text",{x:mx,y:my-8,"text-anchor":"middle","font-size":"14",fill:"#7c3aed"}, contraLayer);
+      t.textContent = "↔";
     }
   }
 }
@@ -887,6 +902,7 @@ function setContraMode(on) {
     hintEl.textContent = "Click a node to edit it. Hover for guidance.";
     guide.style.display = "none";
   }
+  document.getElementById("cg-intersys").style.display = (on && dualMode) ? "block" : "none";
   for (const n of allActiveNodes()) updateNodeVisual(n.id);
 }
 contraBtn.addEventListener("click", () => setContraMode(!contraMode));
@@ -896,11 +912,19 @@ function handleContraNodeClick(id) {
   if (contraFirst===null) {
     contraFirst = id;
     for (const n of allActiveNodes()) updateNodeVisual(n.id);
-    announce(`${nodeDef(id).short} selected. Activate the same node again for a primary contradiction, or another node for a secondary contradiction.`);
+    const hint = dualMode
+      ? `${nodeDef(id).short} selected. Activate the same node again for an inner contradiction, another node in the same system for a secondary contradiction, or a node in the other system for an inter-systemic contradiction.`
+      : `${nodeDef(id).short} selected. Activate the same node again for an inner contradiction, or another node for a secondary contradiction.`;
+    announce(hint);
   } else if (contraFirst===id) {
     showContraPrompt("primary",[id]);
   } else {
-    showContraPrompt("secondary",[contraFirst,id]);
+    const crossSystem = dualMode && (contraFirst.endsWith("_2") !== id.endsWith("_2"));
+    if (crossSystem) {
+      showContraPrompt("intersystemic",[contraFirst,id]);
+    } else {
+      showContraPrompt("secondary",[contraFirst,id]);
+    }
   }
 }
 
@@ -909,12 +933,18 @@ function showContraPrompt(type, nodes) {
   contraEditor.style.display = "block";
   if (type==="primary") {
     const n = nodeDef(nodes[0]);
-    contraLabel.textContent    = `⚡ Primary Contradiction — ${n.short}`;
+    contraLabel.textContent    = `⚡ Inner Contradiction — ${n.short}`;
     contraTypeDesc.textContent = "A tension within this single component. Describe what is pulling against itself.";
-  } else {
+  } else if (type==="secondary") {
     const na=nodeDef(nodes[0]), nb=nodeDef(nodes[1]);
     contraLabel.textContent    = `⚡ Secondary Contradiction — ${na.short} ↔ ${nb.short}`;
     contraTypeDesc.textContent = "A tension between these two components. Describe how they pull in different directions.";
+  } else {
+    const na=nodeDef(nodes[0]), nb=nodeDef(nodes[1]);
+    const sysA = nodes[0].endsWith("_2") ? 2 : 1;
+    const sysB = nodes[1].endsWith("_2") ? 2 : 1;
+    contraLabel.textContent    = `↔ Inter-systemic Contradiction — ${na.short} (Sys ${sysA}) ↔ ${nb.short} (Sys ${sysB})`;
+    contraTypeDesc.textContent = "A tension between the two activity systems. Describe how their goals, rules, or tools conflict across the boundary.";
   }
   contraInput.value = "";
   contraInput.focus();
@@ -1016,12 +1046,19 @@ function updateSummary() {
       const na = allNodes.find(x=>x.id===c.nodes[0]);
       if (!na) continue;
       const div = document.createElement("div");
-      div.className = "sr-contra";
       if (c.type==="primary") {
-        div.textContent = `⚡ Primary — ${na.short}${c.description ? ": "+c.description : ""}`;
-      } else {
+        div.className   = "sr-contra";
+        div.textContent = `⚡ Inner — ${na.short}${c.description ? ": "+c.description : ""}`;
+      } else if (c.type==="secondary") {
         const nb = allNodes.find(x=>x.id===c.nodes[1]);
+        div.className   = "sr-contra";
         div.textContent = `⚡ Secondary — ${na.short} ↔ ${nb?nb.short:"?"}${c.description ? ": "+c.description : ""}`;
+      } else {
+        const nb   = allNodes.find(x=>x.id===c.nodes[1]);
+        const sysA = c.nodes[0].endsWith("_2") ? 2 : 1;
+        const sysB = c.nodes[1].endsWith("_2") ? 2 : 1;
+        div.className   = "sr-contra-inter";
+        div.textContent = `↔ Inter-systemic — ${na.short} (Sys ${sysA}) ↔ ${nb?nb.short:"?"} (Sys ${sysB})${c.description ? ": "+c.description : ""}`;
       }
       summaryBody.appendChild(div);
     }
@@ -1064,38 +1101,50 @@ document.addEventListener("keydown", e   => { if(e.key==="Escape") setExportOpen
 /* ── Export data ── */
 function buildExportData() {
   const notes = document.getElementById("notes-input").value.trim();
+  function fmtContra(c) {
+    return {
+      type: c.type,
+      nodes: c.nodes.map(id => {
+        const b = baseId(id), sys = id.endsWith("_2") ? 2 : 1;
+        const short = NODES.find(n=>n.id===b)?.short || b;
+        return dualMode ? `${short} (System ${sys})` : short;
+      }),
+      description: c.description,
+    };
+  }
   if (!dualMode) {
     return {
       nodes: NODES.map(n=>({id:n.id, label:n.label, value:vals[n.id]})),
-      contradictions: contradictions.map(c=>({
-        type: c.type,
-        nodes: c.nodes.map(id=>NODES.find(n=>n.id===id)?.short||id),
-        description: c.description,
-      })),
+      contradictions: contradictions.map(fmtContra),
       notes,
     };
   }
   return {
     system1: {
       nodes: NODES.map(n=>({id:n.id, label:n.label, value:vals[n.id]})),
-      contradictions: contradictions.filter(c=>!c.nodes[0].endsWith("_2")).map(c=>({
-        type: c.type,
-        nodes: c.nodes.map(id=>NODES.find(n=>n.id===id)?.short||id),
-        description: c.description,
-      })),
+      contradictions: contradictions
+        .filter(c => c.type !== "intersystemic" && !c.nodes[0].endsWith("_2"))
+        .map(fmtContra),
     },
     system2: {
       nodes: NODES.map(n=>({id:n.id, label:n.label, value:vals2[n.id]})),
-      contradictions: contradictions.filter(c=>c.nodes[0].endsWith("_2")).map(c=>({
-        type: c.type,
-        nodes: c.nodes.map(id=>{ const b=baseId(id); return NODES.find(n=>n.id===b)?.short||b; }),
-        description: c.description,
-      })),
+      contradictions: contradictions
+        .filter(c => c.type !== "intersystemic" && c.nodes[0].endsWith("_2"))
+        .map(fmtContra),
     },
+    intersystemicContradictions: contradictions
+      .filter(c => c.type === "intersystemic")
+      .map(fmtContra),
     sharedObject,
     sharedOutcome,
     notes,
   };
+}
+
+function contraTag(type) {
+  if (type==="primary")      return "Inner contradiction";
+  if (type==="secondary")    return "Secondary contradiction";
+  return "Inter-systemic contradiction";
 }
 
 function exportContras(contras) {
@@ -1103,7 +1152,7 @@ function exportContras(contras) {
   if (contras.length) {
     lines.push("Contradictions","-".repeat(14));
     for (const c of contras) {
-      const tag = c.type==="primary"?"Primary contradiction":"Secondary contradiction";
+      const tag = contraTag(c.type);
       const who = c.nodes.length===1?c.nodes[0]:`${c.nodes[0]} ↔ ${c.nodes[1]}`;
       lines.push(`[${tag}] ${who}${c.description?"\n"+c.description:""}\n`);
     }
@@ -1121,6 +1170,13 @@ function exportText() {
     lines.push("","System 2","-".repeat(8),"");
     for (const n of d.system2.nodes) lines.push(`${n.label}:\n${n.value||"(empty)"}\n`);
     lines.push(...exportContras(d.system2.contradictions));
+    if (d.intersystemicContradictions.length) {
+      lines.push("","Inter-systemic Contradictions","-".repeat(29));
+      for (const c of d.intersystemicContradictions) {
+        const who = `${c.nodes[0]} ↔ ${c.nodes[1]}`;
+        lines.push(`[Inter-systemic contradiction] ${who}${c.description?"\n"+c.description:""}\n`);
+      }
+    }
     lines.push("","Shared elements","-".repeat(15),"");
     lines.push(`Shared Object:\n${d.sharedObject||"(empty)"}\n`);
     lines.push(`Shared Outcome(s):\n${d.sharedOutcome||"(empty)"}\n`);
@@ -1137,7 +1193,7 @@ function exportMarkdownContras(contras) {
   if (contras.length) {
     lines.push("","### Contradictions","");
     for (const c of contras) {
-      const tag = c.type==="primary"?"Primary contradiction":"Secondary contradiction";
+      const tag = contraTag(c.type);
       const who = c.nodes.length===1?c.nodes[0]:`${c.nodes[0]} ↔ ${c.nodes[1]}`;
       lines.push(`- **${tag} — ${who}**${c.description?": "+c.description:""}`);
     }
@@ -1155,6 +1211,13 @@ function exportMarkdown() {
     lines.push("","## System 2","","| Component | Content |","|-----------|---------|");
     for (const n of d.system2.nodes) lines.push(`| **${n.label}** | ${n.value||"—"} |`);
     lines.push(...exportMarkdownContras(d.system2.contradictions));
+    if (d.intersystemicContradictions.length) {
+      lines.push("","## Inter-systemic Contradictions","");
+      for (const c of d.intersystemicContradictions) {
+        const who = `${c.nodes[0]} ↔ ${c.nodes[1]}`;
+        lines.push(`- **Inter-systemic contradiction — ${who}**${c.description?": "+c.description:""}`);
+      }
+    }
     lines.push("","## Shared Elements","");
     lines.push(`| **Shared Object** | ${d.sharedObject||"—"} |`);
     lines.push(`| **Shared Outcome(s)** | ${d.sharedOutcome||"—"} |`);
