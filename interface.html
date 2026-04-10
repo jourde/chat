@@ -238,9 +238,8 @@
 
     <div id="svg-wrap">
       <svg id="tri" viewBox="0 0 580 430"
-           aria-labelledby="svg-title"
+           aria-label="Engeström Activity System Triangle — six interactive nodes: Tools, Subject, Object, Rules, Community, Division of Labour"
            focusable="false">
-        <title id="svg-title">Engeström Activity System Triangle — six interactive nodes: Tools, Subject, Object, Rules, Community, Division of Labour</title>
       </svg>
       <!-- Tooltip is mouse-only; hidden from AT -->
       <div class="tooltip" id="tooltip" aria-hidden="true"></div>
@@ -414,7 +413,7 @@ const NODES = [
     lines:["Subject",null], lx:-16, ly:0, anchor:"end", ly2:14 },
   { id:"object",    short:"Object",    x:Ox, y:Oy,
     label:"Object (motive-bearing)",
-    guidance:"The raw material or problem space on which the subject acts, transformed through the activity into an outcome. The object embeds the motive: it is what makes the activity meaningful and gives it direction.",
+    guidance:"What the activity is directed at and works to transform — whether a physical thing, a situation, a concept, or a person's development. The object embeds the motive: it is what makes the activity meaningful and gives it direction.",
     prompt:"What is being worked on or transformed? What underlying need or motive drives the activity?",
     lines:["Object",null], lx:16, ly:0, anchor:"start", ly2:14 },
   { id:"rules",     short:"Rules",     x:Rx, y:Ry,
@@ -511,11 +510,10 @@ function buildSVG() {
   const vbW = dualMode ? X2 + W : W;
   svg.setAttribute("viewBox", `0 0 ${vbW} ${H}`);
 
-  // SVG title
-  const titleEl = el("title",{id:"svg-title"},svg);
-  titleEl.textContent = dualMode
+  // Update aria-label (no <title> element — avoids native browser tooltip)
+  svg.setAttribute("aria-label", dualMode
     ? "Engeström Activity System — two activity triangles with shared object"
-    : "Engeström Activity System Triangle — six interactive nodes: Tools, Subject, Object, Rules, Community, Division of Labour";
+    : "Engeström Activity System Triangle — six interactive nodes: Tools, Subject, Object, Rules, Community, Division of Labour");
 
   // Defs & markers
   const defs = el("defs",{},svg);
@@ -869,7 +867,7 @@ analyseBtn.addEventListener("click", () => {
               (dualMode && Object.values(vals2).some(v=>v.trim()));
   if (!has) {
     showModal("About the model",
-      "Engeström's Activity System has six components:\n\n• Tools — what mediates the activity\n• Subject — who does it\n• Object — the raw material or problem space being transformed; embeds the activity's motive\n• Rules — norms and conventions\n• Community — the collective co-orienting toward the same object\n• Division of Labour — how work is distributed\n\nClick any node on the triangle to fill it in, then click Analyse for a reading of your system.");
+      "Engeström's Activity System has six components:\n\n• Tools — what mediates the activity\n• Subject — who does it\n• Object — what the activity is directed at and works to transform; embeds the activity's motive\n• Rules — norms and conventions\n• Community — the collective co-orienting toward the same object\n• Division of Labour — how work is distributed\n\nClick any node on the triangle to fill it in, then click Analyse for a reading of your system.");
   } else {
     const s1lines = NODES.map(n=>`• ${n.label}: ${vals[n.id]||"(empty)"}`).join("\n");
     const body = dualMode
