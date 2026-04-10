@@ -77,7 +77,7 @@
   #right .btn-row[role="toolbar"] {
     flex-wrap: nowrap;
     align-items: center;
-    overflow-x: auto;
+    overflow: visible;
   }
   #right .btn-row[role="toolbar"] > * { flex: 0 0 auto; }
   button {
@@ -140,7 +140,7 @@
   #export-wrap { position: relative; display: inline-block; }
   #export-menu {
     display: none; position: absolute;
-    bottom: calc(100% + 6px); left: 0;
+    top: calc(100% + 6px); left: 0;
     background: #fff; border: 1px solid #767676;
     border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.12);
     overflow: hidden; z-index: 20; min-width: 130px;
@@ -216,7 +216,7 @@
 
   /* ── Responsive ── */
   @media (max-width: 700px) {
-    #right .btn-row[role="toolbar"] { flex-wrap: wrap; overflow-x: visible; }
+    #right .btn-row[role="toolbar"] { flex-wrap: wrap; overflow: visible; }
   }
 
   /* ── Dual system mode ── */
@@ -257,7 +257,7 @@
           <button role="menuitem" data-fmt="markdown">Markdown</button>
           <button role="menuitem" data-fmt="json">JSON</button>
           <hr style="margin:4px 0;border:none;border-top:1px solid #e0e0e0;" aria-hidden="true">
-          <button role="menuitem" data-fmt="interface">Interface content</button>
+          <button role="menuitem" data-fmt="interface">Export interface raw content</button>
         </div>
       </div>
     </div>
@@ -1367,7 +1367,7 @@ exportMenu.addEventListener("click", e => {
   if (fmt==="text")      download(exportText(),             "activity-system.txt",      "text/plain");
   if (fmt==="markdown")  download(exportMarkdown(),         "activity-system.md",       "text/markdown");
   if (fmt==="json")      download(exportJSON(),             "activity-system.json",     "application/json");
-  if (fmt==="interface") download(exportInterfaceMarkdown(),"interface-content.md",     "text/markdown");
+  if (fmt==="interface") download(exportInterfaceMarkdown(),"export-interface-raw-content.md","text/markdown");
   setExportOpen(false);
   exportBtn.focus();
 });
