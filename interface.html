@@ -9,7 +9,7 @@
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
   /* ── Base ── */
-  body { font-family: system-ui, sans-serif; background: #f9f9f7; color: #111; min-height: 100vh; padding: 1.5rem; }
+  body { font-family: system-ui, sans-serif; background: #f9f9f7; color: #111; min-height: 100vh; padding: 1.5rem; overflow-x: hidden; }
   h1 { font-size: 1rem; font-weight: 600; margin-bottom: 1rem; }
   h2 { font-size: 0.8125rem; font-weight: 500; }
 
@@ -42,17 +42,17 @@
   g[role="button"]:focus-visible .node-focus-ring { display: block; }
 
   /* ── Layout ── */
-  #app { display: flex; gap: 1rem; align-items: flex-start; }
-  #left { flex: 0 0 54%; display: flex; flex-direction: column; gap: 0.625rem; min-width: 0; }
-  #right { flex: 1; display: flex; flex-direction: column; gap: 0.625rem; padding: 0.75rem; border: 1px solid #c4c4c4; border-radius: 12px; background: #fff; min-width: 0; }
+  #app { display: flex; flex-direction: column; gap: 0.75rem; width: 100%; max-width: 100%; }
+  #left { display: flex; flex-direction: column; gap: 0.625rem; min-width: 0; width: 100%; max-width: 100%; }
+  #right { display: flex; flex-direction: column; gap: 0.625rem; padding: 0.75rem; border: 1px solid #c4c4c4; border-radius: 12px; background: #fff; width: 100%; min-width: 0; max-width: 100%; }
 
   /* ── Summary section (below diagram) ── */
   #summary-section { margin-top: 1rem; display: flex; flex-direction: column; border: 1px solid #c4c4c4; border-radius: 12px; overflow: hidden; background: #fff; }
   #summary-main { display: flex; min-height: 0; }
 
   /* ── SVG ── */
-  svg { display: block; width: 100%; height: auto; background: #fff; border: 1px solid #c4c4c4; border-radius: 12px; }
-  #svg-wrap { position: relative; }
+  svg { display: block; width: 100%; max-width: 100%; height: 100%; background: #fff; border: 1px solid #c4c4c4; border-radius: 12px; }
+  #svg-wrap { position: relative; width: 100%; max-width: 100%; aspect-ratio: 1260 / 430; }
 
   /* ── Editor panels ── */
   #editor { display: none; border-radius: 10px; padding: 0.625rem 0.75rem; background: #fff; border: 2px solid #c4c4c4; }
@@ -74,6 +74,12 @@
 
   /* ── Buttons ── */
   .btn-row { display: flex; gap: 8px; flex-wrap: wrap; }
+  #right .btn-row[role="toolbar"] {
+    flex-wrap: nowrap;
+    align-items: center;
+    overflow-x: auto;
+  }
+  #right .btn-row[role="toolbar"] > * { flex: 0 0 auto; }
   button {
     font-size: 0.8125rem; padding: 7px 16px;
     border-radius: 8px; border: 1px solid #767676;
@@ -210,16 +216,11 @@
 
   /* ── Responsive ── */
   @media (max-width: 700px) {
-    #app { flex-direction: column; }
-    #left, #right { flex: none; width: 100%; }
+    #right .btn-row[role="toolbar"] { flex-wrap: wrap; overflow-x: visible; }
   }
 
   /* ── Dual system mode ── */
-  #app.dual-active #left { flex: 0 0 68%; }
-  @media (max-width: 900px) {
-    #app.dual-active { flex-direction: column; }
-    #app.dual-active #left { flex: none; width: 100%; }
-  }
+  #app.dual-active #left { width: 100%; }
 
   /* ── Summary system headings ── */
   .sr-sys-heading {
@@ -237,6 +238,30 @@
 <div id="live-region" aria-live="polite" aria-atomic="true" class="visually-hidden"></div>
 
 <main id="app">
+
+  <!-- Controls -->
+  <aside id="right">
+    <p id="hint-text" aria-live="polite">Click a node to edit it. Hover for guidance.</p>
+    <div class="btn-row" role="toolbar" aria-label="Actions">
+      <button id="analyse-btn">Explain the model</button>
+      <button id="dual-btn" aria-pressed="false">Show two systems</button>
+      <button id="contra-btn" aria-pressed="false">⚡ Add a contradiction</button>
+      <button id="copy-btn">Copy summary and notes</button>
+      <div id="export-wrap">
+        <button id="export-btn"
+                aria-haspopup="menu"
+                aria-expanded="false"
+                aria-controls="export-menu">Export summary and notes ↓</button>
+        <div id="export-menu" role="menu" aria-label="Export format">
+          <button role="menuitem" data-fmt="text">Plain text</button>
+          <button role="menuitem" data-fmt="markdown">Markdown</button>
+          <button role="menuitem" data-fmt="json">JSON</button>
+          <hr style="margin:4px 0;border:none;border-top:1px solid #e0e0e0;" aria-hidden="true">
+          <button role="menuitem" data-fmt="interface">Interface content</button>
+        </div>
+      </div>
+    </div>
+  </aside>
 
   <!-- Left: diagram + editors -->
   <section id="left" aria-label="Activity system diagram">
@@ -274,30 +299,6 @@
     </div>
 
   </section>
-
-  <!-- Right: controls -->
-  <aside id="right">
-    <p id="hint-text" aria-live="polite">Click a node to edit it. Hover for guidance.</p>
-    <div class="btn-row" role="toolbar" aria-label="Actions">
-      <button id="analyse-btn">Explain the model</button>
-      <button id="dual-btn" aria-pressed="false">Show two systems</button>
-      <button id="contra-btn" aria-pressed="false">⚡ Add a contradiction</button>
-      <button id="copy-btn">Copy summary and notes</button>
-      <div id="export-wrap">
-        <button id="export-btn"
-                aria-haspopup="menu"
-                aria-expanded="false"
-                aria-controls="export-menu">Export summary and notes ↓</button>
-        <div id="export-menu" role="menu" aria-label="Export format">
-          <button role="menuitem" data-fmt="text">Plain text</button>
-          <button role="menuitem" data-fmt="markdown">Markdown</button>
-          <button role="menuitem" data-fmt="json">JSON</button>
-          <hr style="margin:4px 0;border:none;border-top:1px solid #e0e0e0;" aria-hidden="true">
-          <button role="menuitem" data-fmt="interface">Interface content</button>
-        </div>
-      </div>
-    </div>
-  </aside>
 
 </main>
 
@@ -456,6 +457,7 @@ const COL = {tools:"#534AB7",subject:"#0F6E56",object:"#993C1D",rules:"#185FA5",
 
 /* ── System 2 mirror coordinates ── */
 const X2 = 680;
+const FULL_VB_W = X2 + W;
 const NODES2 = NODES.map(n => ({
   ...n,
   id: n.id + "_2",
@@ -518,7 +520,7 @@ function buildSVG() {
   sharedOutPreview = null;
   outcomePreview   = null;
 
-  const vbW = dualMode ? X2 + W : W;
+  const vbW = dualMode ? FULL_VB_W : W;
   svg.setAttribute("viewBox", `0 0 ${vbW} ${H}`);
 
   // Update aria-label (no <title> element — avoids native browser tooltip)
@@ -552,6 +554,8 @@ function buildSVG() {
     const cx = 630, cy = Oy;
     const boxW = 80, boxH = 44;
     const boxX = cx - boxW/2, boxY = cy - boxH/2;
+    const sharedOutTop = boxY - 96;
+    const sharedOutArrowY = boxY - 44;
     const obj1 = NODES.find(n=>n.id==="object");
     const obj2 = NODES2.find(n=>n.id==="object_2");
 
@@ -561,7 +565,7 @@ function buildSVG() {
       stroke:"#595959","stroke-width":"1.5","marker-end":"url(#tip-out)"},centreDecor);
     el("line",{x1:obj2.x-R-GAP-2,y1:cy,x2:boxX+boxW+4,y2:cy,
       stroke:"#595959","stroke-width":"1.5","marker-end":"url(#tip-out)"},centreDecor);
-    el("line",{x1:cx,y1:boxY-4,x2:cx,y2:boxY-58,
+    el("line",{x1:cx,y1:boxY-4,x2:cx,y2:sharedOutArrowY,
       stroke:"#595959","stroke-width":"1.5","marker-end":"url(#tip-out)"},centreDecor);
 
     // Shared Outcome interactive group (label + preview + click area)
@@ -570,13 +574,13 @@ function buildSVG() {
       "aria-label":"Shared Outcome(s): activate to edit",
       style:"cursor:pointer"
     },svg);
-    el("rect",{x:cx-46,y:boxY-74,width:96,height:52,rx:"4",
+    el("rect",{x:cx-50,y:sharedOutTop,width:100,height:58,rx:"4",
       fill:"transparent",stroke:"none"},sharedOutGroup);
-    const _soL1 = el("text",{x:cx,y:boxY-52,"text-anchor":"middle","font-size":"10",fill:"#595959"},sharedOutGroup);
+    const _soL1 = el("text",{x:cx,y:sharedOutTop+18,"text-anchor":"middle","font-size":"10",fill:"#595959"},sharedOutGroup);
     _soL1.textContent = "Shared";
-    const _soL2 = el("text",{x:cx,y:boxY-40,"text-anchor":"middle","font-size":"10",fill:"#595959"},sharedOutGroup);
+    const _soL2 = el("text",{x:cx,y:sharedOutTop+32,"text-anchor":"middle","font-size":"10",fill:"#595959"},sharedOutGroup);
     _soL2.textContent = "Outcome(s)";
-    sharedOutPreview = el("text",{x:cx,y:boxY-28,"text-anchor":"middle","font-size":"9",fill:"#185FA5","font-style":"italic"},sharedOutGroup);
+    sharedOutPreview = el("text",{x:cx,y:sharedOutTop+48,"text-anchor":"middle","font-size":"9",fill:"#185FA5","font-style":"italic"},sharedOutGroup);
     sharedOutGroup.addEventListener("click",   () => showSharedEditor("sharedOutcome"));
     sharedOutGroup.addEventListener("keydown", e => { if(e.key==="Enter"||e.key===" "){ e.preventDefault(); showSharedEditor("sharedOutcome"); } });
 
@@ -600,7 +604,7 @@ function buildSVG() {
     // Single mode: outcome arrow + interactive outcome node
     const obj  = NODES.find(n=>n.id==="object");
     const arrX = obj.x + R + GAP + 2;
-    const boxX = obj.x + 56;
+    const boxX = obj.x + 82;
     const boxY = obj.y - 14;
     const cy   = obj.y;
 
@@ -813,11 +817,15 @@ function showTooltip(n) {
   tooltip.style.display    = "block";
   tooltip.style.borderColor = COL[bid];
   tooltip.innerHTML = `<strong style="color:${COL[bid]}">${n.short}</strong><br>${n.guidance}`;
-  const vbW = dualMode ? X2+W : W;
-  const ww  = document.getElementById("svg-wrap").offsetWidth;
-  const hh  = ww*(H/vbW);
-  let left  = (n.x/vbW)*ww+(n.lx||0)-90;
-  let top   = (n.y/H)*hh+(n.ly<0?-90:20);
+  const vbW = dualMode ? FULL_VB_W : W;
+  const wrap = document.getElementById("svg-wrap");
+  const ww   = wrap.offsetWidth;
+  const hh   = wrap.offsetHeight;
+  const scale = Math.min(ww / vbW, hh / H);
+  const contentW = vbW * scale;
+  const xOffset = (ww - contentW) / 2;
+  let left  = xOffset + (n.x * scale) + (n.lx || 0) - 90;
+  let top   = (n.y * scale) + (n.ly < 0 ? -90 : 20);
   left = Math.max(0,Math.min(left,ww-190));
   top  = Math.max(0,top);
   tooltip.style.left = left+"px";
