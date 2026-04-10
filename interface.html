@@ -123,6 +123,7 @@
   #contra-guide .cg-row:last-child { margin-bottom: 0; }
   #contra-guide .cg-type { font-weight: 600; color: #7a3507; }
   #contra-guide .cg-example { color: #666; font-style: italic; }
+  #contra-guide .cg-note { margin-top: 8px; padding-top: 7px; border-top: 1px solid #e5c98a; font-size: 0.7rem; color: #7a6030; font-style: italic; line-height: 1.5; }
 
   /* ── Export menu ── */
   #export-wrap { position: relative; display: inline-block; }
@@ -314,6 +315,7 @@
         Click one node in System 1, then a node in System 2.<br>
         <span class="cg-example">Example: System 1's rules clash with System 2's division of labour.</span>
       </div>
+      <div class="cg-note">Note: Engeström (1987) also identifies <strong>tertiary contradictions</strong> — tensions between the dominant form of an activity and a culturally more advanced form of it — which are not modelled here.</div>
     </div>
 
     <!-- Live summary -->
@@ -411,9 +413,9 @@ const NODES = [
     prompt:"Who performs the activity? Whose perspective are you analysing?",
     lines:["Subject",null], lx:-16, ly:0, anchor:"end", ly2:14 },
   { id:"object",    short:"Object",    x:Ox, y:Oy,
-    label:"Object / Motive",
-    guidance:"The immediate goals of the activity — what is being worked on or transformed.",
-    prompt:"What is being transformed? What are the immediate goals and underlying motives?",
+    label:"Object (motive-bearing)",
+    guidance:"The raw material or problem space on which the subject acts, transformed through the activity into an outcome. The object embeds the motive: it is what makes the activity meaningful and gives it direction.",
+    prompt:"What is being worked on or transformed? What underlying need or motive drives the activity?",
     lines:["Object",null], lx:16, ly:0, anchor:"start", ly2:14 },
   { id:"rules",     short:"Rules",     x:Rx, y:Ry,
     label:"Rules",
@@ -422,8 +424,8 @@ const NODES = [
     lines:["Rules",null], lx:-14, ly:22, anchor:"end", ly2:36 },
   { id:"community", short:"Community", x:Cx, y:Cy,
     label:"Community",
-    guidance:"People and groups whose knowledge, interests, stakes and goals shape the activity.",
-    prompt:"Who else shares or has a stake in this activity?",
+    guidance:"The collective in which the subject operates and which co-orients toward the same object. Includes those who share, support, or compete for the same object of activity.",
+    prompt:"Who else is part of the collective that shares or co-orients toward this object?",
     lines:["Community",null], lx:0, ly:22, anchor:"middle", ly2:36 },
   { id:"division",  short:"Division",  x:Dx, y:Dy,
     label:"Division of Labour",
@@ -434,7 +436,7 @@ const NODES = [
 
 const EDGES = [
   ["tools","subject"],["tools","object"],["subject","object"],
-  ["tools","community"],["subject","community"],["object","community"],
+  ["subject","community"],["object","community"],
   ["subject","rules"],["object","division"],
   ["rules","community"],["community","division"],
   ["subject","division"],["rules","object"],
@@ -461,6 +463,7 @@ let dualMode      = false;
 let activeSystem  = 1;
 let sharedObject  = "";
 let sharedOutcome = "";
+let outcomeVal    = "";
 
 function storeFor(id) { return id.endsWith("_2") ? vals2 : vals; }
 function baseId(id)   { return id.endsWith("_2") ? id.slice(0,-2) : id; }
@@ -492,16 +495,18 @@ function shorten(x1,y1,x2,y2) {
 }
 
 /* ── SVG construction ── */
-let nodeEls         = {};
-let contraLayer     = null;
+let nodeEls          = {};
+let contraLayer      = null;
 let sharedObjPreview = null;
 let sharedOutPreview = null;
+let outcomePreview   = null;
 
 function buildSVG() {
   svg.innerHTML = "";
   nodeEls = {};
   sharedObjPreview = null;
   sharedOutPreview = null;
+  outcomePreview   = null;
 
   const vbW = dualMode ? X2 + W : W;
   svg.setAttribute("viewBox", `0 0 ${vbW} ${H}`);
@@ -583,13 +588,35 @@ function buildSVG() {
     sharedObjGroup.addEventListener("keydown", e => { if(e.key==="Enter"||e.key===" "){ e.preventDefault(); showSharedEditor("sharedObject"); } });
 
   } else {
-    // Single mode: outcome arrow to the right of the object node
-    const obj = NODES.find(n=>n.id==="object");
-    const outcomeGroup = el("g",{"aria-hidden":"true"},svg);
-    el("line",{x1:obj.x+60,y1:obj.y,x2:obj.x+95,y2:obj.y,
-      stroke:"#595959","stroke-width":"1.5","marker-end":"url(#tip-out)"},outcomeGroup);
-    const outText = el("text",{x:obj.x+108,y:obj.y+4,"font-size":"11",fill:"#595959","text-anchor":"start"},outcomeGroup);
-    outText.textContent = "Outcome";
+    // Single mode: outcome arrow + interactive outcome node
+    const obj  = NODES.find(n=>n.id==="object");
+    const arrX = obj.x + R + GAP + 2;
+    const boxX = obj.x + 56;
+    const boxY = obj.y - 14;
+    const cy   = obj.y;
+
+    // Decorative arrow
+    const arrowDecor = el("g",{"aria-hidden":"true"},svg);
+    el("line",{x1:arrX,y1:cy,x2:boxX-4,y2:cy,
+      stroke:"#595959","stroke-width":"1.5","marker-end":"url(#tip-out)"},arrowDecor);
+
+    // Interactive outcome group
+    const outcomeGroup = el("g",{
+      role:"button", tabindex:"0",
+      "aria-label":"Outcome: activate to edit",
+      style:"cursor:pointer"
+    },svg);
+    el("rect",{x:boxX,y:boxY,width:96,height:28,rx:"6",
+      fill:"#fff",stroke:"#595959","stroke-width":"1.5"},outcomeGroup);
+    const _outL = el("text",{x:boxX+48,y:cy-1,"text-anchor":"middle",
+      "font-size":"10","font-weight":"600",fill:"#444"},outcomeGroup);
+    _outL.textContent = "Outcome";
+    outcomePreview = el("text",{x:boxX+48,y:cy+11,"text-anchor":"middle",
+      "font-size":"9",fill:"#185FA5","font-style":"italic"},outcomeGroup);
+    outcomeGroup.addEventListener("click",   () => showSharedEditor("outcome"));
+    outcomeGroup.addEventListener("keydown", e => {
+      if (e.key==="Enter"||e.key===" "){ e.preventDefault(); showSharedEditor("outcome"); }
+    });
   }
 
   // Contradiction layer (above edges, below nodes)
@@ -718,22 +745,33 @@ function showEditor(id) {
 }
 
 function showSharedEditor(which) {
-  const isSO = which === "sharedObject";
-  editor.style.display   = "block";
-  editor.style.border    = "2px solid #595959";
-  edLabel.style.color    = "#595959";
-  edLabel.textContent    = isSO ? "Shared Object" : "Shared Outcome(s)";
-  edGuidance.textContent = isSO
-    ? "What do both activity systems share as their common object or goal?"
-    : "What is the shared outcome produced by both activity systems working together?";
-  edPrompt.textContent   = isSO
-    ? "What is the shared object or goal connecting both systems?"
-    : "What outcome do both systems jointly produce?";
-  edInput.value = isSO ? sharedObject : sharedOutcome;
+  const isSO  = which === "sharedObject";
+  const isSOC = which === "sharedOutcome";
+  const isOut = which === "outcome";
+  editor.style.display = "block";
+  editor.style.border  = "2px solid #595959";
+  edLabel.style.color  = "#595959";
+  if (isSO) {
+    edLabel.textContent    = "Shared Object";
+    edGuidance.textContent = "What do both activity systems share as their common object or goal?";
+    edPrompt.textContent   = "What is the shared object or goal connecting both systems?";
+    edInput.value          = sharedObject;
+  } else if (isSOC) {
+    edLabel.textContent    = "Shared Outcome(s)";
+    edGuidance.textContent = "What is the shared outcome produced by both activity systems working together?";
+    edPrompt.textContent   = "What outcome do both systems jointly produce?";
+    edInput.value          = sharedOutcome;
+  } else {
+    edLabel.textContent    = "Outcome";
+    edGuidance.textContent = "The result of the object's transformation through the activity — what the activity produces or changes.";
+    edPrompt.textContent   = "What does the activity produce? What change or result occurs through the transformation of the object?";
+    edInput.value          = outcomeVal;
+  }
   edInput.focus();
   edInput.oninput = () => {
-    if (isSO) sharedObject = edInput.value;
-    else      sharedOutcome = edInput.value;
+    if (isSO)       sharedObject  = edInput.value;
+    else if (isSOC) sharedOutcome = edInput.value;
+    else            outcomeVal    = edInput.value;
     updateSharedPreviews();
     updateSummary();
   };
@@ -749,6 +787,10 @@ function updateSharedPreviews() {
   if (sharedOutPreview) {
     const p = sharedOutcome.trim();
     sharedOutPreview.textContent = p ? (p.length>12 ? p.slice(0,10)+"…" : p) : "";
+  }
+  if (outcomePreview) {
+    const p = outcomeVal.trim();
+    outcomePreview.textContent = p ? (p.length>12 ? p.slice(0,10)+"…" : p) : "";
   }
 }
 
@@ -827,7 +869,7 @@ analyseBtn.addEventListener("click", () => {
               (dualMode && Object.values(vals2).some(v=>v.trim()));
   if (!has) {
     showModal("About the model",
-      "Engeström's Activity System has six components:\n\n• Tools — what mediates the activity\n• Subject — who does it\n• Object — what is being transformed\n• Rules — norms and conventions\n• Community — others who share the object\n• Division of Labour — how work is distributed\n\nClick any node on the triangle to fill it in, then click Analyse for a reading of your system.");
+      "Engeström's Activity System has six components:\n\n• Tools — what mediates the activity\n• Subject — who does it\n• Object — the raw material or problem space being transformed; embeds the activity's motive\n• Rules — norms and conventions\n• Community — the collective co-orienting toward the same object\n• Division of Labour — how work is distributed\n\nClick any node on the triangle to fill it in, then click Analyse for a reading of your system.");
   } else {
     const s1lines = NODES.map(n=>`• ${n.label}: ${vals[n.id]||"(empty)"}`).join("\n");
     const body = dualMode
@@ -913,8 +955,8 @@ function handleContraNodeClick(id) {
     contraFirst = id;
     for (const n of allActiveNodes()) updateNodeVisual(n.id);
     const hint = dualMode
-      ? `${nodeDef(id).short} selected. Activate the same node again for an inner contradiction, another node in the same system for a secondary contradiction, or a node in the other system for an inter-systemic contradiction.`
-      : `${nodeDef(id).short} selected. Activate the same node again for an inner contradiction, or another node for a secondary contradiction.`;
+      ? `${nodeDef(id).short} selected. Activate the same node again for a primary contradiction, another node in the same system for a secondary contradiction, or a node in the other system for an inter-systemic contradiction.`
+      : `${nodeDef(id).short} selected. Activate the same node again for a primary contradiction, or another node for a secondary contradiction.`;
     announce(hint);
   } else if (contraFirst===id) {
     showContraPrompt("primary",[id]);
@@ -933,7 +975,7 @@ function showContraPrompt(type, nodes) {
   contraEditor.style.display = "block";
   if (type==="primary") {
     const n = nodeDef(nodes[0]);
-    contraLabel.textContent    = `⚡ Inner Contradiction — ${n.short}`;
+    contraLabel.textContent    = `⚡ Primary Contradiction — ${n.short}`;
     contraTypeDesc.textContent = "A tension within this single component. Describe what is pulling against itself.";
   } else if (type==="secondary") {
     const na=nodeDef(nodes[0]), nb=nodeDef(nodes[1]);
@@ -1033,6 +1075,15 @@ function updateSummary() {
     }
   } else {
     renderSummarySection(NODES, vals, null);
+    // Outcome row
+    addHr();
+    const outRow = document.createElement("div"); outRow.className = "sr-row";
+    const outLbl = document.createElement("div"); outLbl.className = "sr-label"; outLbl.textContent = "Outcome";
+    const outVal = document.createElement("div");
+    if (outcomeVal.trim()) { outVal.className = "sr-value"; outVal.textContent = outcomeVal; }
+    else                   { outVal.className = "sr-empty"; outVal.textContent = "—"; }
+    outRow.appendChild(outLbl); outRow.appendChild(outVal);
+    summaryBody.appendChild(outRow);
   }
   // Contradictions (all systems)
   if (contradictions.length) {
@@ -1048,7 +1099,7 @@ function updateSummary() {
       const div = document.createElement("div");
       if (c.type==="primary") {
         div.className   = "sr-contra";
-        div.textContent = `⚡ Inner — ${na.short}${c.description ? ": "+c.description : ""}`;
+        div.textContent = `⚡ Primary — ${na.short}${c.description ? ": "+c.description : ""}`;
       } else if (c.type==="secondary") {
         const nb = allNodes.find(x=>x.id===c.nodes[1]);
         div.className   = "sr-contra";
@@ -1115,6 +1166,7 @@ function buildExportData() {
   if (!dualMode) {
     return {
       nodes: NODES.map(n=>({id:n.id, label:n.label, value:vals[n.id]})),
+      outcome: outcomeVal,
       contradictions: contradictions.map(fmtContra),
       notes,
     };
@@ -1142,7 +1194,7 @@ function buildExportData() {
 }
 
 function contraTag(type) {
-  if (type==="primary")      return "Inner contradiction";
+  if (type==="primary")      return "Primary contradiction";
   if (type==="secondary")    return "Secondary contradiction";
   return "Inter-systemic contradiction";
 }
@@ -1182,6 +1234,7 @@ function exportText() {
     lines.push(`Shared Outcome(s):\n${d.sharedOutcome||"(empty)"}\n`);
   } else {
     for (const n of d.nodes) lines.push(`${n.label}:\n${n.value||"(empty)"}\n`);
+    lines.push(`Outcome:\n${d.outcome||"(empty)"}\n`);
     lines.push(...exportContras(d.contradictions));
   }
   if (d.notes) lines.push("Notes","-".repeat(14),d.notes);
@@ -1224,6 +1277,7 @@ function exportMarkdown() {
   } else {
     lines.push("| Component | Content |","|-----------|---------|");
     for (const n of d.nodes) lines.push(`| **${n.label}** | ${n.value||"—"} |`);
+    lines.push(`| **Outcome** | ${d.outcome||"—"} |`);
     if (d.contradictions.length) {
       lines.push("","## Contradictions","");
       for (const c of d.contradictions) {
