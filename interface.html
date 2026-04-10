@@ -44,7 +44,11 @@
   /* ── Layout ── */
   #app { display: flex; gap: 1rem; align-items: flex-start; }
   #left { flex: 0 0 54%; display: flex; flex-direction: column; gap: 0.625rem; min-width: 0; }
-  #right { flex: 1; display: flex; flex-direction: column; border: 1px solid #c4c4c4; border-radius: 12px; overflow: hidden; background: #fff; min-width: 0; }
+  #right { flex: 1; display: flex; flex-direction: column; gap: 0.625rem; padding: 0.75rem; border: 1px solid #c4c4c4; border-radius: 12px; background: #fff; min-width: 0; }
+
+  /* ── Summary section (below diagram) ── */
+  #summary-section { margin-top: 1rem; display: flex; flex-direction: column; border: 1px solid #c4c4c4; border-radius: 12px; overflow: hidden; background: #fff; }
+  #summary-main { display: flex; min-height: 0; }
 
   /* ── SVG ── */
   svg { display: block; width: 100%; height: auto; background: #fff; border: 1px solid #c4c4c4; border-radius: 12px; }
@@ -84,7 +88,7 @@
 
   /* ── Summary panel ── */
   #chat-header { padding: 9px 13px; border-bottom: 1px solid #c4c4c4; }
-  #summary-body { overflow-y: auto; padding: 12px 13px; display: flex; flex-direction: column; gap: 10px; flex: 1; }
+  #summary-body { overflow-y: auto; padding: 12px 13px; display: flex; flex-direction: column; gap: 10px; flex: 1; max-height: 280px; }
   .sr-row { font-size: 0.8125rem; line-height: 1.5; }
   .sr-label { font-size: 0.6875rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 3px; }
   .sr-value { color: #222; white-space: pre-wrap; overflow-wrap: break-word; }
@@ -94,8 +98,9 @@
   .sr-contra-inter { font-size: 0.75rem; line-height: 1.5; padding: 5px 9px; border-radius: 7px; background: #f5f3ff; border-left: 3px solid #7c3aed; }
 
   /* ── Notes row ── */
-  #notes-row { border-top: 1px solid #c4c4c4; padding: 9px 11px; }
+  #notes-row { border-left: 1px solid #c4c4c4; padding: 9px 11px; flex: 0 0 240px; display: flex; flex-direction: column; }
   #notes-row label { display: block; font-size: 0.6875rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #555; margin-bottom: 4px; }
+  #notes-row textarea { flex: 1; resize: none; }
 
   /* ── Tooltip (mouse only, aria-hidden) ── */
   .tooltip {
@@ -210,7 +215,7 @@
   }
 
   /* ── Dual system mode ── */
-  #app.dual-active #left { flex: 0 0 72%; }
+  #app.dual-active #left { flex: 0 0 68%; }
   @media (max-width: 900px) {
     #app.dual-active { flex-direction: column; }
     #app.dual-active #left { flex: none; width: 100%; }
@@ -244,7 +249,6 @@
       <!-- Tooltip is mouse-only; hidden from AT -->
       <div class="tooltip" id="tooltip" aria-hidden="true"></div>
     </div>
-    <p id="hint-text" aria-live="polite">Click a node to edit it. Hover for guidance.</p>
 
     <!-- Node editor -->
     <div id="editor" role="region" aria-labelledby="ed-label">
@@ -269,7 +273,11 @@
       </div>
     </div>
 
-    <!-- Action bar -->
+  </section>
+
+  <!-- Right: controls -->
+  <aside id="right">
+    <p id="hint-text" aria-live="polite">Click a node to edit it. Hover for guidance.</p>
     <div class="btn-row" role="toolbar" aria-label="Actions">
       <button id="analyse-btn">Explain the model</button>
       <button id="dual-btn" aria-pressed="false">Show two systems</button>
@@ -284,52 +292,55 @@
           <button role="menuitem" data-fmt="text">Plain text</button>
           <button role="menuitem" data-fmt="markdown">Markdown</button>
           <button role="menuitem" data-fmt="json">JSON</button>
+          <hr style="margin:4px 0;border:none;border-top:1px solid #e0e0e0;" aria-hidden="true">
+          <button role="menuitem" data-fmt="interface">Interface content</button>
         </div>
       </div>
     </div>
+  </aside>
 
-  </section>
+</main>
 
-  <!-- Right: summary panel -->
-  <aside id="right" aria-labelledby="summary-heading">
+<!-- Summary section — full width below diagram -->
+<section id="summary-section" aria-labelledby="summary-heading">
 
-    <div id="chat-header">
-      <h2 id="summary-heading">Summary</h2>
+  <div id="chat-header">
+    <h2 id="summary-heading">Summary</h2>
+  </div>
+
+  <!-- Contradiction guidance — shown only in contra mode -->
+  <div id="contra-guide" role="region" aria-label="Contradiction guidance">
+    <div class="cg-row">
+      <span class="cg-type">⚡ Primary Contradiction</span> — a tension <strong>within a single component</strong>.<br>
+      Click the same node twice to mark it.<br>
+      <span class="cg-example">Example: the Tools node — staff must use a digital platform they find unusable.</span>
     </div>
-
-    <!-- Contradiction guidance — shown only in contra mode -->
-    <div id="contra-guide" role="region" aria-label="Contradiction guidance">
-      <div class="cg-row">
-        <span class="cg-type">⚡ Primary Contradiction</span> — a tension <strong>within a single component</strong>.<br>
-        Click the same node twice to mark it.<br>
-        <span class="cg-example">Example: the Tools node — staff must use a digital platform they find unusable.</span>
-      </div>
-      <div class="cg-row">
-        <span class="cg-type">⚡ Secondary Contradiction</span> — a tension <strong>between two components</strong>.<br>
-        Click one node, then a different node in the same system.<br>
-        <span class="cg-example">Example: Rules demand standardised assessment, but the Object is personalised learning.</span>
-      </div>
-      <div class="cg-row" id="cg-intersys" style="display:none">
-        <span class="cg-type">↔ Inter-systemic Contradiction</span> — a tension <strong>between the two activity systems</strong>.<br>
-        Click one node in System 1, then a node in System 2.<br>
-        <span class="cg-example">Example: System 1's rules clash with System 2's division of labour.</span>
-      </div>
-      <div class="cg-note">Note: Engeström (1987) also identifies <strong>tertiary contradictions</strong> — tensions between the dominant form of an activity and a culturally more advanced form of it — which are not modelled here.</div>
+    <div class="cg-row">
+      <span class="cg-type">⚡ Secondary Contradiction</span> — a tension <strong>between two components</strong>.<br>
+      Click one node, then a different node in the same system.<br>
+      <span class="cg-example">Example: Rules demand standardised assessment, but the Object is personalised learning.</span>
     </div>
+    <div class="cg-row" id="cg-intersys" style="display:none">
+      <span class="cg-type">↔ Inter-systemic Contradiction</span> — a tension <strong>between the two activity systems</strong>.<br>
+      Click one node in System 1, then a node in System 2.<br>
+      <span class="cg-example">Example: System 1's rules clash with System 2's division of labour.</span>
+    </div>
+    <div class="cg-note">Note: Engeström (1987) also identifies <strong>tertiary contradictions</strong> — tensions between the dominant form of an activity and a culturally more advanced form of it — which are not modelled here.</div>
+  </div>
 
-    <!-- Live summary -->
+  <!-- Summary body + Notes side by side -->
+  <div id="summary-main">
     <div id="summary-body"
          aria-live="polite"
          aria-label="Live activity system summary"></div>
 
-    <!-- Notes -->
     <div id="notes-row">
       <label for="notes-input">Additional notes</label>
-      <textarea id="notes-input" rows="3" placeholder="Additional notes…"></textarea>
+      <textarea id="notes-input" placeholder="Additional notes…"></textarea>
     </div>
+  </div>
 
-  </aside>
-</main>
+</section>
 
 <footer id="page-footer">
   <p id="footer-credit">François Jourde (2026) — MIT Licence</p>
@@ -1290,6 +1301,53 @@ function exportMarkdown() {
 }
 
 function exportJSON() { return JSON.stringify(buildExportData(),null,2); }
+
+function exportInterfaceMarkdown() {
+  const lines = [
+    "# Activity System Analyser — Interface Content",
+    "",
+    "> This file contains all static text used in the interface: node definitions, guidance, prompts, and contradiction descriptions.",
+    "",
+    "---",
+    "",
+    "## Node definitions",
+    "",
+  ];
+  for (const n of NODES) {
+    lines.push(`### ${n.label}`, "");
+    lines.push(`**Guidance:** ${n.guidance}`, "");
+    lines.push(`**Prompt:** *${n.prompt}*`, "");
+  }
+  lines.push(
+    "---", "",
+    "## Outcome (single-system mode)", "",
+    "**Guidance:** What the activity is directed at and works to transform — what the activity produces or changes.", "",
+    "**Prompt:** *What does the activity produce? What change or result occurs through the transformation of the object?*", "",
+    "---", "",
+    "## Shared elements (dual-system mode)", "",
+    "### Shared Object", "",
+    "**Guidance:** What do both activity systems share as their common object or goal?", "",
+    "**Prompt:** *What is the shared object or goal connecting both systems?*", "",
+    "### Shared Outcome(s)", "",
+    "**Guidance:** What is the shared outcome produced by both activity systems working together?", "",
+    "**Prompt:** *What outcome do both systems jointly produce?*", "",
+    "---", "",
+    "## Contradiction types", "",
+    "### ⚡ Primary contradiction", "",
+    "A tension **within a single component**.", "",
+    "*Example: the Tools node — staff must use a digital platform they find unusable.*", "",
+    "### ⚡ Secondary contradiction", "",
+    "A tension **between two components** of the same activity system.", "",
+    "*Example: Rules demand standardised assessment, but the Object is personalised learning.*", "",
+    "### ↔ Inter-systemic contradiction *(dual-system mode only)*", "",
+    "A tension **between the two activity systems**.", "",
+    "*Example: System 1's rules clash with System 2's division of labour.*", "",
+    "### Note on tertiary contradictions", "",
+    "Engeström (1987) also identifies **tertiary contradictions** — tensions between the dominant form of an activity and a culturally more advanced form of it — which are not modelled in this tool.",
+    ""
+  );
+  return lines.join("\n");
+}
 function download(content,filename,mime) {
   const a = document.createElement("a");
   a.href = URL.createObjectURL(new Blob([content],{type:mime}));
@@ -1298,9 +1356,10 @@ function download(content,filename,mime) {
 exportMenu.addEventListener("click", e => {
   const fmt = e.target.dataset.fmt;
   if (!fmt) return;
-  if (fmt==="text")     download(exportText(),    "activity-system.txt", "text/plain");
-  if (fmt==="markdown") download(exportMarkdown(),"activity-system.md",  "text/markdown");
-  if (fmt==="json")     download(exportJSON(),    "activity-system.json","application/json");
+  if (fmt==="text")      download(exportText(),             "activity-system.txt",      "text/plain");
+  if (fmt==="markdown")  download(exportMarkdown(),         "activity-system.md",       "text/markdown");
+  if (fmt==="json")      download(exportJSON(),             "activity-system.json",     "application/json");
+  if (fmt==="interface") download(exportInterfaceMarkdown(),"interface-content.md",     "text/markdown");
   setExportOpen(false);
   exportBtn.focus();
 });
