@@ -14,9 +14,9 @@ The tool lets you map and analyse an activity system by filling in six interconn
 |---|---|
 | **Mediating artefacts (tools and signs)** | Technologies, symbols or language used to accomplish the activity |
 | **Subject** | The person or group whose perspective is being analysed |
-| **Object / Motive** | What is being transformed; the immediate goals and underlying motives |
+| **Object (motive-bearing)** | The raw material or problem space being transformed through the activity; embeds the activity's motive |
 | **Rules** | Norms, conventions and regulations that constrain or guide the activity |
-| **Community** | Others who share a stake in the activity |
+| **Community** | The collective in which the subject operates and which co-orients toward the same object |
 | **Division of Labour** | How tasks, roles and power are distributed |
 
 You can also identify **contradictions** at three levels — tensions within a component, between components of the same system, or across two systems — and export the full analysis.
@@ -28,7 +28,7 @@ You can also identify **contradictions** at three levels — tensions within a c
 - **Interactive SVG diagram** — click any node to open a guided editor with prompts for each component
 - **Two-system view** — toggle between a single activity system and a dual-system view showing two systems alongside a Shared Object and Shared Outcome(s), following Engeström's third-generation CHAT framework
 - **Three levels of contradiction tracking** — with visual indicators on the diagram:
-  - ⚡ **Inner** — a tension within a single component (e.g. a tool that is both required and unusable)
+  - ⚡ **Primary** — a tension within a single component (e.g. a tool that is both required and unusable)
   - ⚡ **Secondary** — a tension between two components within the same system (e.g. Rules clashing with the Object)
   - ↔ **Inter-systemic** — a tension between the two activity systems (dual-system view only)
 - **Live summary panel** — real-time display of all component values and contradictions as you type
@@ -49,8 +49,9 @@ The **two-system view** implements the third-generation CHAT framework, which pl
 
 | Level | Label | Description |
 |---|---|---|
-| Level 1 | Inner | Tension within a single component |
+| Level 1 | Primary | Tension within a single component |
 | Level 2 | Secondary | Tension between two components of the same system |
+| Level 3 | Tertiary | Tension between the current form of an activity and a more advanced form *(not modelled in this tool)* |
 | Level 4 | Inter-systemic | Tension between two activity systems |
 
 **Key references:**
@@ -67,7 +68,7 @@ No installation or build step required. The tool is a single self-contained HTML
 2. Open it in any modern browser
 3. Click a node on the triangle to begin filling in your activity system
 4. Use **⚡ Add a contradiction** to mark tensions:
-   - Click the **same node twice** for an inner contradiction
+   - Click the **same node twice** for a primary contradiction
    - Click **two different nodes in the same system** for a secondary contradiction
 5. Export or copy your analysis when done
 
