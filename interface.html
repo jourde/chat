@@ -1,286 +1,655 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Activity System Analyser based on cultural-historical activity theory (CHAT)</title>
 <style>
-  /* ── Reset ── */
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-  /* ── Base ── */
-  body { font-family: system-ui, sans-serif; background: #f9f9f7; color: #111; min-height: 100vh; padding: 1.5rem; overflow-x: hidden; }
-  h1 { font-size: 1rem; font-weight: 600; margin-bottom: 1rem; }
-  h2 { font-size: 0.8125rem; font-weight: 500; }
-
-  /* ── Utility: visually hidden but accessible to AT ── */
-  .visually-hidden {
-    position: absolute; width: 1px; height: 1px;
-    padding: 0; margin: -1px; overflow: hidden;
-    clip: rect(0,0,0,0); white-space: nowrap; border: 0;
+  :root {
+    --page-bg: #f9f9f7;
+    --surface: #ffffff;
+    --surface-muted: #f7f7f4;
+    --surface-control: #f2f2f0;
+    --surface-control-hover: #e8e8e6;
+    --text: #111111;
+    --text-muted: #555555;
+    --text-soft: #767676;
+    --border: #c4c4c4;
+    --border-strong: #767676;
+    --focus: #005fcc;
+    --contradiction: #b45309;
+    --contradiction-soft: #fef3c7;
+    --contradiction-text: #7a3507;
+    --inter-system: #7c3aed;
+    --link: #185fa5;
+    --shadow-soft: 0 2px 8px rgba(0, 0, 0, 0.12);
+    --shadow-strong: 0 8px 32px rgba(0, 0, 0, 0.2);
   }
 
-  /* ── Focus indicators (WCAG 2.4.7 / 2.4.11) ── */
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  [hidden] {
+    display: none !important;
+  }
+
+  body {
+    min-height: 100vh;
+    padding: 1.5rem;
+    overflow-x: hidden;
+    font-family: system-ui, sans-serif;
+    background: var(--page-bg);
+    color: var(--text);
+  }
+
+  h1 {
+    font-size: 1rem;
+    font-weight: 600;
+  }
+
+  h2 {
+    font-size: 0.8125rem;
+    font-weight: 500;
+  }
+
+  button,
+  textarea {
+    font: inherit;
+  }
+
+  .page-header {
+    margin-bottom: 1rem;
+  }
+
+  .visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
   :focus-visible {
-    outline: 3px solid #005fcc;
+    outline: 3px solid var(--focus);
     outline-offset: 2px;
     border-radius: 4px;
   }
+
   textarea:focus-visible,
   input[type="text"]:focus-visible {
-    outline: 3px solid #005fcc;
     outline-offset: 0;
     border-radius: 8px;
   }
-  /* SVG node focus ring — visible custom indicator */
-  .node-focus-ring {
-    display: none; fill: none;
-    stroke: #005fcc; stroke-width: 3;
-    pointer-events: none;
-  }
-  g[role="button"]:focus { outline: none; }
-  g[role="button"]:focus-visible .node-focus-ring { display: block; }
 
-  /* ── Layout ── */
-  #app { display: flex; flex-direction: column; gap: 0.75rem; width: 100%; max-width: 100%; }
-  #left { display: flex; flex-direction: column; gap: 0.625rem; min-width: 0; width: 100%; max-width: 100%; }
-  #right { display: flex; flex-direction: column; gap: 0.625rem; padding: 0.75rem; border: 1px solid #c4c4c4; border-radius: 12px; background: #fff; width: 100%; min-width: 0; max-width: 100%; }
-
-  /* ── Summary section (below diagram) ── */
-  #summary-section { margin-top: 1rem; display: flex; flex-direction: column; border: 1px solid #c4c4c4; border-radius: 12px; overflow: hidden; background: #fff; }
-  #summary-main { display: flex; min-height: 0; }
-
-  /* ── SVG ── */
-  svg { display: block; width: 100%; max-width: 100%; height: 100%; background: #fff; border: 1px solid #c4c4c4; border-radius: 12px; }
-  #svg-wrap { position: relative; width: 100%; max-width: 100%; aspect-ratio: 1260 / 430; }
-
-  /* ── Editor panels ── */
-  #editor { display: none; border-radius: 10px; padding: 0.625rem 0.75rem; background: #fff; border: 2px solid #c4c4c4; }
-  #editor p.label { font-size: 0.8125rem; font-weight: 600; margin-bottom: 2px; }
-  #editor p.guidance { font-size: 0.75rem; color: #555; line-height: 1.4; margin-bottom: 2px; }
-  #editor p.prompt { font-size: 0.75rem; color: #555; font-style: italic; margin-bottom: 6px; }
-
-  #contra-editor { display: none; border-radius: 10px; padding: 0.625rem 0.75rem; background: #fff; border: 2px solid #b45309; }
-  #contra-editor p.label { font-size: 0.8125rem; font-weight: 600; color: #b45309; margin-bottom: 4px; }
-  #contra-editor p.type-desc { font-size: 0.75rem; color: #555; margin-bottom: 6px; }
-
-  /* ── Form elements ── */
-  textarea {
-    width: 100%; font-size: 0.8125rem; resize: vertical;
-    border-radius: 8px; border: 1px solid #767676;
-    padding: 6px 8px; font-family: inherit;
-    background: #fff; color: #111; min-height: 3em;
-  }
-
-  /* ── Buttons ── */
-  .btn-row { display: flex; gap: 8px; flex-wrap: wrap; }
-  #right .btn-row[role="toolbar"] {
+  #app {
     display: flex;
-    gap: 10px;
+    flex-direction: column;
+    gap: 0.75rem;
+    width: 100%;
+    max-width: 100%;
+  }
+
+  #left {
+    display: flex;
+    flex-direction: column;
+    gap: 0.625rem;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  #right {
+    display: flex;
+    flex-direction: column;
+    gap: 0.625rem;
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    padding: 0.75rem;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--surface);
+  }
+
+  #hint-text {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+  }
+
+  .btn-row {
+    display: flex;
     flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  #right .btn-row[role="toolbar"] {
     align-items: stretch;
+    gap: 10px;
     overflow: visible;
   }
+
   .toolbar-group {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
     gap: 8px;
     padding: 8px 10px;
     border: 1px solid #d6d6d1;
     border-radius: 10px;
-    background: #f7f7f4;
-    flex-wrap: wrap;
+    background: var(--surface-muted);
   }
+
   .toolbar-group-label {
+    color: var(--text-muted);
     font-size: 0.6875rem;
     font-weight: 700;
     letter-spacing: 0.05em;
     text-transform: uppercase;
-    color: #555;
     white-space: nowrap;
   }
+
   button {
-    font-size: 0.8125rem; padding: 7px 16px;
-    border-radius: 8px; border: 1px solid #767676;
-    background: #f2f2f0; color: #111; cursor: pointer;
+    cursor: pointer;
+    padding: 7px 16px;
+    border: 1px solid var(--border-strong);
+    border-radius: 8px;
+    background: var(--surface-control);
+    color: var(--text);
+    font-size: 0.8125rem;
   }
-  button:hover { background: #e8e8e6; }
+
+  button:hover {
+    background: var(--surface-control-hover);
+  }
+
   .btn-contra-active {
-    background: #fef3c7 !important;
-    border-color: #b45309 !important;
-    color: #7a3507 !important;
+    background: var(--contradiction-soft) !important;
+    border-color: var(--contradiction) !important;
+    color: var(--contradiction-text) !important;
   }
 
-  /* ── Summary panel ── */
-  #chat-header { padding: 9px 13px; border-bottom: 1px solid #c4c4c4; }
-  #summary-body { overflow-y: auto; padding: 12px 13px; display: flex; flex-direction: column; gap: 10px; flex: 1; max-height: 280px; }
-  .sr-row { font-size: 0.8125rem; line-height: 1.5; }
-  .sr-label { font-size: 0.6875rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 3px; }
-  .sr-value { color: #222; white-space: pre-wrap; overflow-wrap: break-word; }
-  .sr-empty { color: #767676; font-style: italic; }
-  .sr-divider { border: none; border-top: 1px solid #bbb; margin: 2px 0; }
-  .sr-contra { font-size: 0.75rem; line-height: 1.5; padding: 5px 9px; border-radius: 7px; background: #fef9ec; border-left: 3px solid #b45309; }
-  .sr-contra-inter { font-size: 0.75rem; line-height: 1.5; padding: 5px 9px; border-radius: 7px; background: #f5f3ff; border-left: 3px solid #7c3aed; }
-
-  /* ── Notes row ── */
-  #notes-row { border-left: 1px solid #c4c4c4; padding: 9px 11px; flex: 0 0 240px; display: flex; flex-direction: column; }
-  #notes-row label { display: block; font-size: 0.6875rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #555; margin-bottom: 4px; }
-  #notes-row textarea { flex: 1; resize: none; }
-
-  /* ── Tooltip (mouse only, aria-hidden) ── */
-  .tooltip {
-    position: absolute; background: #fff;
-    border-radius: 6px; padding: 6px 8px;
-    font-size: 0.75rem; line-height: 1.4; color: #333;
-    pointer-events: none; max-width: 180px;
-    z-index: 10; display: none;
-    border: 1px solid #767676;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.12);
-  }
-
-  /* ── Hint text ── */
-  #hint-text { font-size: 0.75rem; color: #555; }
-
-  /* ── Contradiction guidance ── */
-  #contra-guide {
-    display: none; background: #fffbeb;
-    border-bottom: 1px solid #b45309;
-    padding: 10px 13px; font-size: 0.75rem;
-    line-height: 1.6; color: #333;
-  }
-  #contra-guide strong { color: #7a3507; }
-  #contra-guide .cg-row { margin-bottom: 6px; }
-  #contra-guide .cg-row:last-child { margin-bottom: 0; }
-  #contra-guide .cg-type { font-weight: 600; color: #7a3507; }
-  #contra-guide .cg-example { color: #666; font-style: italic; }
-  #contra-guide .cg-note { margin-top: 8px; padding-top: 7px; border-top: 1px solid #e5c98a; font-size: 0.7rem; color: #7a6030; font-style: italic; line-height: 1.5; }
-
-  /* ── Export menu ── */
-  #export-wrap { position: relative; display: inline-block; }
-  #export-menu {
-    display: none; position: absolute;
-    top: calc(100% + 6px); left: 0;
-    background: #fff; border: 1px solid #767676;
-    border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.12);
-    overflow: hidden; z-index: 20; min-width: 130px;
-  }
-  #export-menu button {
-    display: block; width: 100%; text-align: left;
-    border: none; border-radius: 0; background: #fff;
-    padding: 8px 14px; font-size: 0.8125rem; color: #111;
-  }
-  #export-menu button:hover { background: #f2f2f0; }
-  #export-menu button:focus-visible { outline-offset: -3px; }
-
-  /* ── Modal ── */
-  #modal-overlay {
-    display: none; position: fixed; inset: 0;
-    background: rgba(0,0,0,0.5);
-    z-index: 100; align-items: center; justify-content: center;
-  }
-  #modal-overlay.open { display: flex; }
-  #modal-box {
-    background: #fff; border-radius: 14px;
-    padding: 24px 26px; max-width: 480px; width: 90%;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+  #svg-wrap {
     position: relative;
-  }
-  #modal-box h2 { font-size: 0.9375rem; font-weight: 600; margin-bottom: 12px; padding-right: 28px; }
-  #modal-body { font-size: 0.8125rem; line-height: 1.65; white-space: pre-wrap; overflow-wrap: break-word; color: #222; }
-  #modal-close {
-    position: absolute; top: 12px; right: 14px;
-    background: none; border: 1px solid transparent;
-    font-size: 1.125rem; color: #333; cursor: pointer;
-    padding: 4px 8px; border-radius: 6px; line-height: 1;
-  }
-  #modal-close:hover { background: #f2f2f0; }
-
-  /* ── Footer ── */
-  #page-footer { margin-top: 1.25rem; display: flex; justify-content: center; align-items: center; gap: 12px; }
-  #footer-credit { font-size: 0.75rem; color: #555; }
-  #legal-btn {
-    font-size: 0.75rem; color: #555; background: none;
-    border: none; padding: 4px 8px; cursor: pointer;
-    text-decoration: underline; border-radius: 4px;
-  }
-  #legal-btn:hover { color: #111; }
-
-  /* ── Legal modal ── */
-  #legal-overlay {
-    display: none; position: fixed; inset: 0;
-    background: rgba(0,0,0,0.5);
-    z-index: 100; align-items: center; justify-content: center;
-  }
-  #legal-overlay.open { display: flex; }
-  #legal-box {
-    background: #fff; border-radius: 14px;
-    padding: 28px 30px; max-width: 620px; width: 92%;
-    max-height: 85vh; overflow-y: auto;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.2); position: relative;
-  }
-  #legal-close {
-    position: absolute; top: 12px; right: 14px;
-    background: none; border: 1px solid transparent;
-    font-size: 1.125rem; color: #333; cursor: pointer;
-    padding: 4px 8px; border-radius: 6px; line-height: 1;
-  }
-  #legal-close:hover { background: #f2f2f0; }
-  #legal-content h1 { font-size: 1rem; font-weight: 700; margin-bottom: 1.2rem; padding-right: 28px; }
-  #legal-content h3 { font-size: 0.875rem; font-weight: 600; margin: 1.2rem 0 0.4rem; color: #111; }
-  #legal-content p  { font-size: 0.8125rem; line-height: 1.65; color: #222; margin-bottom: 0.5rem; }
-  #legal-content ul { font-size: 0.8125rem; line-height: 1.65; color: #222; margin: 0.25rem 0 0.5rem 1.25rem; }
-  #legal-content li { margin-bottom: 0.25rem; }
-  #legal-content a  { color: #185FA5; }
-  #legal-content a:hover { text-decoration: none; }
-
-  /* ── Responsive ── */
-  @media (max-width: 700px) {
-    #right .btn-row[role="toolbar"] { overflow: visible; }
-    .toolbar-group { width: 100%; }
+    width: 100%;
+    max-width: 100%;
+    aspect-ratio: 1260 / 430;
   }
 
-  /* ── Dual system mode ── */
-  #app.dual-active #left { width: 100%; }
+  svg {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    height: 100%;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--surface);
+  }
 
-  /* ── Summary system headings ── */
+  .node-focus-ring,
+  .interactive-focus-ring {
+    display: none;
+    fill: none;
+    stroke: var(--focus);
+    stroke-width: 3;
+    pointer-events: none;
+  }
+
+  g[role="button"]:focus {
+    outline: none;
+  }
+
+  g[role="button"]:focus-visible .node-focus-ring,
+  g[role="button"]:focus-visible .interactive-focus-ring {
+    display: block;
+  }
+
+  #editor,
+  #contra-editor {
+    padding: 0.625rem 0.75rem;
+    border-radius: 10px;
+    background: var(--surface);
+  }
+
+  #editor {
+    border: 2px solid var(--border);
+  }
+
+  #contra-editor {
+    border: 2px solid var(--contradiction);
+  }
+
+  #editor .label,
+  #contra-editor .label {
+    margin-bottom: 2px;
+    font-size: 0.8125rem;
+    font-weight: 600;
+  }
+
+  #editor .guidance,
+  #editor .prompt,
+  #contra-editor .type-desc {
+    margin-bottom: 6px;
+    color: var(--text-muted);
+    font-size: 0.75rem;
+    line-height: 1.4;
+  }
+
+  #editor .prompt {
+    margin-bottom: 6px;
+    font-style: italic;
+  }
+
+  #contra-editor .label {
+    margin-bottom: 4px;
+    color: var(--contradiction);
+  }
+
+  textarea {
+    width: 100%;
+    min-height: 3em;
+    padding: 6px 8px;
+    border: 1px solid var(--border-strong);
+    border-radius: 8px;
+    background: var(--surface);
+    color: var(--text);
+    font-size: 0.8125rem;
+    resize: vertical;
+  }
+
+  #summary-section {
+    display: flex;
+    flex-direction: column;
+    margin-top: 1rem;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--surface);
+  }
+
+  #chat-header {
+    padding: 9px 13px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  #contra-guide {
+    padding: 10px 13px;
+    border-bottom: 1px solid var(--contradiction);
+    background: #fffbeb;
+    color: #333333;
+    font-size: 0.75rem;
+    line-height: 1.6;
+  }
+
+  #contra-guide strong,
+  #contra-guide .cg-type {
+    color: var(--contradiction-text);
+  }
+
+  #contra-guide .cg-row {
+    margin-bottom: 6px;
+  }
+
+  #contra-guide .cg-row:last-child {
+    margin-bottom: 0;
+  }
+
+  #contra-guide .cg-type {
+    font-weight: 600;
+  }
+
+  #contra-guide .cg-example {
+    color: #666666;
+    font-style: italic;
+  }
+
+  #contra-guide .cg-note {
+    margin-top: 8px;
+    padding-top: 7px;
+    border-top: 1px solid #e5c98a;
+    color: #7a6030;
+    font-size: 0.7rem;
+    font-style: italic;
+    line-height: 1.5;
+  }
+
+  #summary-main {
+    display: flex;
+    min-height: 0;
+  }
+
+  #summary-body {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: 10px;
+    max-height: 280px;
+    overflow-y: auto;
+    padding: 12px 13px;
+  }
+
+  .sr-row {
+    font-size: 0.8125rem;
+    line-height: 1.5;
+  }
+
+  .sr-label,
   .sr-sys-heading {
-    font-size: 0.75rem; font-weight: 700; color: #444;
-    text-transform: uppercase; letter-spacing: 0.06em;
-    margin-top: 4px; margin-bottom: 2px;
+    font-weight: 700;
+    text-transform: uppercase;
+  }
+
+  .sr-label {
+    margin-bottom: 3px;
+    font-size: 0.6875rem;
+    letter-spacing: 0.05em;
+  }
+
+  .sr-sys-heading {
+    margin-top: 4px;
+    margin-bottom: 2px;
+    color: #444444;
+    font-size: 0.75rem;
+    letter-spacing: 0.06em;
+  }
+
+  .sr-value {
+    color: #222222;
+    white-space: pre-wrap;
+    overflow-wrap: break-word;
+  }
+
+  .sr-empty {
+    color: var(--text-soft);
+    font-style: italic;
+  }
+
+  .sr-divider {
+    margin: 2px 0;
+    border: none;
+    border-top: 1px solid #bbbbbb;
+  }
+
+  .sr-contra,
+  .sr-contra-inter {
+    padding: 5px 9px;
+    border-radius: 7px;
+    font-size: 0.75rem;
+    line-height: 1.5;
+  }
+
+  .sr-contra {
+    border-left: 3px solid var(--contradiction);
+    background: #fef9ec;
+  }
+
+  .sr-contra-inter {
+    border-left: 3px solid var(--inter-system);
+    background: #f5f3ff;
+  }
+
+  #notes-row {
+    display: flex;
+    flex: 0 0 240px;
+    flex-direction: column;
+    padding: 9px 11px;
+    border-left: 1px solid var(--border);
+  }
+
+  #notes-row label {
+    display: block;
+    margin-bottom: 4px;
+    color: var(--text-muted);
+    font-size: 0.6875rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+
+  #notes-row textarea {
+    flex: 1;
+    resize: none;
+  }
+
+  .tooltip {
+    position: absolute;
+    z-index: 10;
+    display: none;
+    max-width: 180px;
+    padding: 6px 8px;
+    border: 1px solid var(--border-strong);
+    border-radius: 6px;
+    background: var(--surface);
+    box-shadow: var(--shadow-soft);
+    color: #333333;
+    font-size: 0.75rem;
+    line-height: 1.4;
+    pointer-events: none;
+  }
+
+  #export-wrap {
+    position: relative;
+    display: inline-block;
+  }
+
+  #export-menu {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    z-index: 20;
+    min-width: 130px;
+    overflow: hidden;
+    border: 1px solid var(--border-strong);
+    border-radius: 8px;
+    background: var(--surface);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  }
+
+  #export-menu button {
+    display: block;
+    width: 100%;
+    padding: 8px 14px;
+    border: 0;
+    border-radius: 0;
+    background: var(--surface);
+    color: var(--text);
+    text-align: left;
+  }
+
+  #export-menu button:hover {
+    background: var(--surface-control);
+  }
+
+  #export-menu button:focus-visible {
+    outline-offset: -3px;
+  }
+
+  .dialog-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.5);
+  }
+
+  .dialog-box {
+    position: relative;
+    width: 92%;
+    max-height: 85vh;
+    overflow-y: auto;
+    border-radius: 14px;
+    background: var(--surface);
+    box-shadow: var(--shadow-strong);
+  }
+
+  .dialog-close {
+    position: absolute;
+    top: 12px;
+    right: 14px;
+    padding: 4px 8px;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    background: none;
+    color: #333333;
+    font-size: 1.125rem;
+    line-height: 1;
+  }
+
+  .dialog-close:hover {
+    background: var(--surface-control);
+  }
+
+  #legal-box {
+    max-width: 620px;
+    padding: 28px 30px;
+  }
+
+  #legal-content h2 {
+    margin-bottom: 1.2rem;
+    padding-right: 28px;
+    font-size: 1rem;
+    font-weight: 700;
+  }
+
+  #legal-content h3 {
+    margin: 1.2rem 0 0.4rem;
+    color: var(--text);
+    font-size: 0.875rem;
+    font-weight: 600;
+  }
+
+  #legal-content p,
+  #legal-content ul {
+    color: #222222;
+    font-size: 0.8125rem;
+    line-height: 1.65;
+  }
+
+  #legal-content p {
+    margin-bottom: 0.5rem;
+  }
+
+  #legal-content ul {
+    margin: 0.25rem 0 0.5rem 1.25rem;
+  }
+
+  #legal-content li {
+    margin-bottom: 0.25rem;
+  }
+
+  #legal-content a {
+    color: var(--link);
+  }
+
+  #legal-content a:hover {
+    text-decoration: none;
+  }
+
+  #page-footer {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 12px;
+    margin-top: 1.25rem;
+  }
+
+  #footer-credit {
+    color: var(--text-muted);
+    font-size: 0.75rem;
+  }
+
+  #legal-btn {
+    padding: 4px 8px;
+    border: none;
+    border-radius: 4px;
+    background: none;
+    color: var(--text-muted);
+    font-size: 0.75rem;
+    text-decoration: underline;
+  }
+
+  #legal-btn:hover {
+    color: var(--text);
+  }
+
+  .mt-6 {
+    margin-top: 6px;
+  }
+
+  .footer-separator {
+    color: #555555;
+    font-size: 0.75rem;
+  }
+
+  #app.dual-active #left {
+    width: 100%;
+  }
+
+  @media (max-width: 700px) {
+    .toolbar-group {
+      width: 100%;
+    }
+
+    #summary-main {
+      flex-direction: column;
+    }
+
+    #notes-row {
+      flex-basis: auto;
+      min-height: 12rem;
+      border-top: 1px solid var(--border);
+      border-left: 0;
+    }
   }
 </style>
 </head>
 <body>
+<header class="page-header">
+  <h1>Activity System Analyser based on cultural-historical activity theory (CHAT)</h1>
+</header>
 
-<h1>Activity System Analyser based on cultural-historical activity theory (CHAT)</h1>
-
-<!-- Hidden live region for screen-reader announcements -->
 <div id="live-region" aria-live="polite" aria-atomic="true" class="visually-hidden"></div>
 
 <main id="app">
-
-  <!-- Controls -->
-  <aside id="right">
+  <aside id="right" aria-labelledby="controls-heading">
+    <h2 id="controls-heading" class="visually-hidden">Controls</h2>
     <p id="hint-text" aria-live="polite">Click a node to edit it. Hover for guidance.</p>
+
     <div class="btn-row" role="toolbar" aria-label="Actions">
       <div class="toolbar-group" role="group" aria-label="View actions">
         <span class="toolbar-group-label">View</span>
         <button id="dual-btn" aria-pressed="false">Show two systems</button>
       </div>
+
       <div class="toolbar-group" role="group" aria-label="Contradiction actions">
         <span class="toolbar-group-label">Contradictions</span>
         <button id="contra-btn" aria-pressed="false">⚡ Add a contradiction</button>
       </div>
+
       <div class="toolbar-group" role="group" aria-label="Export actions">
         <span class="toolbar-group-label">Export</span>
         <button id="export-interface-btn">Export UI Content for Review</button>
         <button id="copy-btn">Copy summary and notes</button>
         <div id="export-wrap">
-          <button id="export-btn"
-                  aria-haspopup="menu"
-                  aria-expanded="false"
-                  aria-controls="export-menu">Export summary and notes ↓</button>
-          <div id="export-menu" role="menu" aria-label="Export format">
+          <button
+            id="export-btn"
+            aria-haspopup="menu"
+            aria-expanded="false"
+            aria-controls="export-menu"
+          >
+            Export summary and notes ↓
+          </button>
+          <div id="export-menu" role="menu" aria-label="Export format" hidden>
             <button role="menuitem" data-fmt="text">Plain text</button>
             <button role="menuitem" data-fmt="markdown">Markdown</button>
             <button role="menuitem" data-fmt="json">JSON</button>
@@ -290,54 +659,60 @@
     </div>
   </aside>
 
-  <!-- Left: diagram + editors -->
-  <section id="left" aria-label="Activity system diagram">
+  <section id="left" aria-labelledby="diagram-heading">
+    <h2 id="diagram-heading" class="visually-hidden">Activity system diagram</h2>
+    <p id="diagram-instructions" class="visually-hidden">
+      The diagram contains interactive nodes. Press Tab to focus a node, then Enter or Space to edit it.
+    </p>
 
     <div id="svg-wrap">
-      <svg id="tri" viewBox="0 0 580 430"
-           aria-label="Engeström Activity System Triangle — six interactive nodes: Tools, Subject, Object, Rules, Community, Division of Labour"
-           focusable="false">
-      </svg>
-      <!-- Tooltip is mouse-only; hidden from AT -->
+      <svg
+        id="tri"
+        viewBox="0 0 580 430"
+        aria-label="Engeström Activity System Triangle — six interactive nodes: Tools, Subject, Object, Rules, Community, Division of Labour"
+        aria-describedby="diagram-instructions"
+        focusable="false"
+      ></svg>
       <div class="tooltip" id="tooltip" aria-hidden="true"></div>
     </div>
 
-    <!-- Node editor -->
-    <div id="editor" role="region" aria-labelledby="ed-label">
+    <section id="editor" aria-labelledby="ed-label" hidden>
       <p class="label" id="ed-label"></p>
       <p class="guidance" id="ed-guidance"></p>
       <p class="prompt" id="ed-prompt"></p>
       <label for="ed-input" class="visually-hidden">Component description</label>
-      <textarea id="ed-input" rows="2" placeholder="Type here…"
-                aria-describedby="ed-guidance ed-prompt"></textarea>
-    </div>
+      <textarea
+        id="ed-input"
+        rows="2"
+        placeholder="Type here…"
+        aria-describedby="ed-guidance ed-prompt"
+      ></textarea>
+    </section>
 
-    <!-- Contradiction editor -->
-    <div id="contra-editor" role="region" aria-labelledby="contra-label">
+    <section id="contra-editor" aria-labelledby="contra-label" hidden>
       <p class="label" id="contra-label"></p>
       <p class="type-desc" id="contra-type-desc"></p>
       <label for="contra-input" class="visually-hidden">Contradiction description</label>
-      <textarea id="contra-input" rows="2" placeholder="Describe the contradiction…"
-                aria-describedby="contra-type-desc"></textarea>
-      <div class="btn-row" style="margin-top:6px">
+      <textarea
+        id="contra-input"
+        rows="2"
+        placeholder="Describe the contradiction…"
+        aria-describedby="contra-type-desc"
+      ></textarea>
+      <div class="btn-row mt-6">
         <button id="contra-save-btn">Save contradiction</button>
         <button id="contra-cancel-btn">Cancel</button>
       </div>
-    </div>
-
+    </section>
   </section>
-
 </main>
 
-<!-- Summary section — full width below diagram -->
 <section id="summary-section" aria-labelledby="summary-heading">
-
   <div id="chat-header">
     <h2 id="summary-heading">Summary</h2>
   </div>
 
-  <!-- Contradiction guidance — shown only in contra mode -->
-  <div id="contra-guide" role="region" aria-label="Contradiction guidance">
+  <section id="contra-guide" aria-label="Contradiction guidance" hidden>
     <div class="cg-row">
       <span class="cg-type">⚡ Primary Contradiction</span> — a tension <strong>within a single component</strong>.<br>
       Click the same node twice to mark it.<br>
@@ -348,40 +723,38 @@
       Click one node, then a different node in the same system.<br>
       <span class="cg-example">Example: Rules demand standardised assessment, but the Object is personalised learning.</span>
     </div>
-    <div class="cg-row" id="cg-intersys" style="display:none">
+    <div class="cg-row" id="cg-intersys" hidden>
       <span class="cg-type">↔ Inter-systemic Contradiction</span> — a tension <strong>between the two activity systems</strong>.<br>
       Click one node in System 1, then a node in System 2.<br>
       <span class="cg-example">Example: System 1's rules clash with System 2's division of labour.</span>
     </div>
-    <div class="cg-note">Note: Engeström (1987) also identifies <strong>tertiary contradictions</strong> — tensions between the dominant form of an activity and a culturally more advanced form of it — which are not modelled here.</div>
-  </div>
+    <div class="cg-note">
+      Note: Engeström (1987) also identifies <strong>tertiary contradictions</strong> — tensions between the
+      dominant form of an activity and a culturally more advanced form of it — which are not modelled here.
+    </div>
+  </section>
 
-  <!-- Summary body + Notes side by side -->
   <div id="summary-main">
-    <div id="summary-body"
-         aria-live="polite"
-         aria-label="Live activity system summary"></div>
+    <div id="summary-body" aria-live="polite" aria-label="Live activity system summary"></div>
 
-    <div id="notes-row">
+    <aside id="notes-row">
       <label for="notes-input">Additional notes</label>
       <textarea id="notes-input" placeholder="Additional notes…"></textarea>
-    </div>
+    </aside>
   </div>
-
 </section>
 
 <footer id="page-footer">
   <p id="footer-credit">François Jourde (2026) — MIT Licence</p>
-  <span aria-hidden="true" style="font-size:0.75rem;color:#555;">|</span>
+  <span class="footer-separator" aria-hidden="true">|</span>
   <button id="legal-btn">Legal Notice &amp; Privacy Policy</button>
 </footer>
 
-<!-- Legal modal -->
-<div id="legal-overlay">
-  <div id="legal-box" role="dialog" aria-modal="true" aria-labelledby="legal-title">
-    <button id="legal-close" aria-label="Close Legal Notice">&#x2715;</button>
+<div id="legal-overlay" class="dialog-overlay" hidden>
+  <div id="legal-box" class="dialog-box" role="dialog" aria-modal="true" aria-labelledby="legal-title">
+    <button id="legal-close" class="dialog-close" aria-label="Close Legal Notice">&#x2715;</button>
     <div id="legal-content">
-      <h1 id="legal-title">Legal Notice and Privacy Policy</h1>
+      <h2 id="legal-title">Legal Notice and Privacy Policy</h2>
 
       <h3>1. Publisher &amp; Hosting</h3>
       <p><strong>Publisher:</strong> This monopage application is published by François Jourde.</p>
@@ -418,1021 +791,1820 @@
   </div>
 </div>
 
-<!-- Modal dialog -->
-<div id="modal-overlay">
-  <div id="modal-box"
-       role="dialog"
-       aria-modal="true"
-       aria-labelledby="modal-title">
-    <button id="modal-close" aria-label="Close dialog">&#x2715;</button>
-    <h2 id="modal-title"></h2>
-    <div id="modal-body"></div>
-  </div>
-</div>
-
 <script>
-/* ── Constants ── */
-const W=580, H=430;
-const Tx=270,Ty=55, Rx=60,Ry=375, Dx=460,Dy=375;
-const Sx=(Tx+Rx)/2, Sy=(Ty+Ry)/2;
-const Ox=(Tx+Dx)/2, Oy=(Ty+Dy)/2;
-const Cx=(Rx+Dx)/2, Cy=(Ry+Dy)/2;
-const R=9, GAP=6;
+(() => {
+  "use strict";
 
-const NODES = [
-  { id:"tools",     short:"Tools",     x:Tx, y:Ty,
-    label:"Mediating artefacts (tools and signs)",
-    guidance:"Physical objects and systems of symbols (like language, mathematics, digital tools) that people use to accomplish the activity.",
-    prompt:"What tools, technologies, signs or symbols mediate this activity?",
-    lines:["Tools",null], lx:0, ly:-22, anchor:"middle", ly2:-10 },
-  { id:"subject",   short:"Subject",   x:Sx, y:Sy,
-    label:"Subject",
-    guidance:"The person or group engaged in the activity who are the focus of analysis.",
-    prompt:"Who performs the activity? Whose perspective are you analysing?",
-    lines:["Subject",null], lx:-16, ly:0, anchor:"end", ly2:14 },
-  { id:"object",    short:"Object",    x:Ox, y:Oy,
-    label:"Object (motive-bearing)",
-    guidance:"What the activity is directed at and works to transform — whether a physical thing, a situation, a concept, or a person's development. The object embeds the motive: it is what makes the activity meaningful and gives it direction.",
-    prompt:"What is being worked on or transformed? What underlying need or motive drives the activity?",
-    lines:["Object",null], lx:16, ly:0, anchor:"start", ly2:14 },
-  { id:"rules",     short:"Rules",     x:Rx, y:Ry,
-    label:"Rules",
-    guidance:"Laws, codes, conventions, customs and agreements that people adhere to while engaging in the activity.",
-    prompt:"What rules, norms or regulations constrain or guide the activity?",
-    lines:["Rules",null], lx:-14, ly:22, anchor:"end", ly2:36 },
-  { id:"community", short:"Community", x:Cx, y:Cy,
-    label:"Community",
-    guidance:"The collective in which the subject operates and which co-orients toward the same object. Includes those who share, support, or compete for the same object of activity.",
-    prompt:"Who else is part of the collective that shares or co-orients toward this object?",
-    lines:["Community",null], lx:0, ly:22, anchor:"middle", ly2:36 },
-  { id:"division",  short:"Division",  x:Dx, y:Dy,
-    label:"Division of Labour",
-    guidance:"How the work in the activity is divided among participants — tasks and power.",
-    prompt:"How are tasks, roles and power distributed among participants?",
-    lines:["Division","of labour"], lx:14, ly:22, anchor:"start", ly2:36 },
-];
+  const SVG_NS = "http://www.w3.org/2000/svg";
+  const GEOMETRY = Object.freeze({
+    width: 580,
+    height: 430,
+    leftGap: 680,
+    nodeRadius: 9,
+    edgeGap: 6,
+    toolsX: 270,
+    toolsY: 55,
+    rulesX: 60,
+    rulesY: 375,
+    divisionX: 460,
+    divisionY: 375
+  });
 
-const EDGES = [
-  ["tools","subject"],["tools","object"],["subject","object"],
-  ["subject","community"],["object","community"],
-  ["subject","rules"],["object","division"],
-  ["rules","community"],["community","division"],
-  ["subject","division"],["rules","object"],
-];
+  const SUBJECT_X = (GEOMETRY.toolsX + GEOMETRY.rulesX) / 2;
+  const SUBJECT_Y = (GEOMETRY.toolsY + GEOMETRY.rulesY) / 2;
+  const OBJECT_X = (GEOMETRY.toolsX + GEOMETRY.divisionX) / 2;
+  const OBJECT_Y = (GEOMETRY.toolsY + GEOMETRY.divisionY) / 2;
+  const COMMUNITY_X = (GEOMETRY.rulesX + GEOMETRY.divisionX) / 2;
+  const COMMUNITY_Y = (GEOMETRY.rulesY + GEOMETRY.divisionY) / 2;
 
-const COL = {tools:"#534AB7",subject:"#0F6E56",object:"#993C1D",rules:"#185FA5",community:"#854F0B",division:"#993556"};
+  const NODE_COLORS = Object.freeze({
+    tools: "#534AB7",
+    subject: "#0F6E56",
+    object: "#993C1D",
+    rules: "#185FA5",
+    community: "#854F0B",
+    division: "#993556"
+  });
 
-/* ── System 2 mirror coordinates ── */
-const X2 = 680;
-const FULL_VB_W = X2 + W;
-const NODES2 = NODES.map(n => ({
-  ...n,
-  id: n.id + "_2",
-  x: X2 + (W - n.x),
-  lx: -n.lx,
-  anchor: n.anchor==="start" ? "end" : n.anchor==="end" ? "start" : "middle",
-}));
-const EDGES2 = EDGES.map(([a,b]) => [a+"_2", b+"_2"]);
-
-/* ── State ── */
-const vals  = {tools:"",subject:"",object:"",rules:"",community:"",division:""};
-const vals2 = {tools:"",subject:"",object:"",rules:"",community:"",division:""};
-let activeId      = null;
-let dualMode      = false;
-let activeSystem  = 1;
-let sharedObject  = "";
-let sharedOutcome = "";
-let outcomeVal    = "";
-
-function storeFor(id) { return id.endsWith("_2") ? vals2 : vals; }
-function baseId(id)   { return id.endsWith("_2") ? id.slice(0,-2) : id; }
-function nodeDef(id)  { return NODES.find(x=>x.id===baseId(id)); }
-function allActiveNodes() { return dualMode ? [...NODES, ...NODES2] : NODES; }
-
-/* ── SVG helpers ── */
-const svg = document.getElementById("tri");
-const NS  = "http://www.w3.org/2000/svg";
-
-function el(tag, attrs, parent) {
-  const e = document.createElementNS(NS, tag);
-  for (const [k,v] of Object.entries(attrs)) e.setAttribute(k,v);
-  if (parent) parent.appendChild(e);
-  return e;
-}
-
-function mkMarker(defs, id, refX, reverse) {
-  const m = el("marker",{id, markerWidth:"8", markerHeight:"8", refX:String(refX), refY:"4",
-    orient:reverse?"auto-start-reverse":"auto", markerUnits:"userSpaceOnUse"},defs);
-  el("path",{d:"M0,1 L7,4 L0,7 z", fill:id==="tip-out"?"#595959":"#333"},m);
-}
-
-function shorten(x1,y1,x2,y2) {
-  const dx=x2-x1, dy=y2-y1, len=Math.sqrt(dx*dx+dy*dy);
-  if(len<1) return {x1,y1,x2,y2};
-  const pad=R+GAP+10, ux=dx/len, uy=dy/len;
-  return {x1:x1+ux*pad,y1:y1+uy*pad,x2:x2-ux*pad,y2:y2-uy*pad};
-}
-
-/* ── SVG construction ── */
-let nodeEls          = {};
-let contraLayer      = null;
-let sharedObjPreview = null;
-let sharedOutPreview = null;
-let outcomePreview   = null;
-
-function buildSVG() {
-  svg.innerHTML = "";
-  nodeEls = {};
-  sharedObjPreview = null;
-  sharedOutPreview = null;
-  outcomePreview   = null;
-
-  const vbW = dualMode ? FULL_VB_W : W;
-  svg.setAttribute("viewBox", `0 0 ${vbW} ${H}`);
-
-  // Update aria-label (no <title> element — avoids native browser tooltip)
-  svg.setAttribute("aria-label", dualMode
-    ? "Engeström Activity System — two activity triangles with shared object"
-    : "Engeström Activity System Triangle — six interactive nodes: Tools, Subject, Object, Rules, Community, Division of Labour");
-
-  // Defs & markers
-  const defs = el("defs",{},svg);
-  mkMarker(defs,"tip-end",0,false);
-  mkMarker(defs,"tip-start",7,true);
-  mkMarker(defs,"tip-out",0,false);
-
-  // Draw edges for one system
-  function drawEdges(nodes, edges) {
-    const g = el("g",{"aria-hidden":"true"},svg);
-    for (const [a,b] of edges) {
-      const na=nodes.find(n=>n.id===a), nb=nodes.find(n=>n.id===b);
-      const s=shorten(na.x,na.y,nb.x,nb.y);
-      el("line",{x1:s.x1,y1:s.y1,x2:s.x2,y2:s.y2,
-        stroke:"#333","stroke-width":"1.5",
-        "marker-start":"url(#tip-start)","marker-end":"url(#tip-end)"},g);
+  const NODE_DEFINITIONS = Object.freeze([
+    {
+      id: "tools",
+      short: "Tools",
+      x: GEOMETRY.toolsX,
+      y: GEOMETRY.toolsY,
+      label: "Mediating artefacts (tools and signs)",
+      guidance: "Physical objects and systems of symbols (like language, mathematics, digital tools) that people use to accomplish the activity.",
+      prompt: "What tools, technologies, signs or symbols mediate this activity?",
+      lines: ["Tools", null],
+      labelOffsetX: 0,
+      labelOffsetY: -22,
+      secondaryLabelOffsetY: -10,
+      anchor: "middle"
+    },
+    {
+      id: "subject",
+      short: "Subject",
+      x: SUBJECT_X,
+      y: SUBJECT_Y,
+      label: "Subject",
+      guidance: "The person or group engaged in the activity who are the focus of analysis.",
+      prompt: "Who performs the activity? Whose perspective are you analysing?",
+      lines: ["Subject", null],
+      labelOffsetX: -16,
+      labelOffsetY: 0,
+      secondaryLabelOffsetY: 14,
+      anchor: "end"
+    },
+    {
+      id: "object",
+      short: "Object",
+      x: OBJECT_X,
+      y: OBJECT_Y,
+      label: "Object (motive-bearing)",
+      guidance: "What the activity is directed at and works to transform — whether a physical thing, a situation, a concept, or a person's development. The object embeds the motive: it is what makes the activity meaningful and gives it direction.",
+      prompt: "What is being worked on or transformed? What underlying need or motive drives the activity?",
+      lines: ["Object", null],
+      labelOffsetX: 16,
+      labelOffsetY: 0,
+      secondaryLabelOffsetY: 14,
+      anchor: "start"
+    },
+    {
+      id: "rules",
+      short: "Rules",
+      x: GEOMETRY.rulesX,
+      y: GEOMETRY.rulesY,
+      label: "Rules",
+      guidance: "Laws, codes, conventions, customs and agreements that people adhere to while engaging in the activity.",
+      prompt: "What rules, norms or regulations constrain or guide the activity?",
+      lines: ["Rules", null],
+      labelOffsetX: -14,
+      labelOffsetY: 22,
+      secondaryLabelOffsetY: 36,
+      anchor: "end"
+    },
+    {
+      id: "community",
+      short: "Community",
+      x: COMMUNITY_X,
+      y: COMMUNITY_Y,
+      label: "Community",
+      guidance: "The collective in which the subject operates and which co-orients toward the same object. Includes those who share, support, or compete for the same object of activity.",
+      prompt: "Who else is part of the collective that shares or co-orients toward this object?",
+      lines: ["Community", null],
+      labelOffsetX: 0,
+      labelOffsetY: 22,
+      secondaryLabelOffsetY: 36,
+      anchor: "middle"
+    },
+    {
+      id: "division",
+      short: "Division",
+      x: GEOMETRY.divisionX,
+      y: GEOMETRY.divisionY,
+      label: "Division of Labour",
+      guidance: "How the work in the activity is divided among participants — tasks and power.",
+      prompt: "How are tasks, roles and power distributed among participants?",
+      lines: ["Division", "of labour"],
+      labelOffsetX: 14,
+      labelOffsetY: 22,
+      secondaryLabelOffsetY: 36,
+      anchor: "start"
     }
-  }
+  ]);
 
-  drawEdges(NODES, EDGES);
-  if (dualMode) drawEdges(NODES2, EDGES2);
+  const EDGE_DEFINITIONS = Object.freeze([
+    ["tools", "subject"],
+    ["tools", "object"],
+    ["subject", "object"],
+    ["subject", "community"],
+    ["object", "community"],
+    ["subject", "rules"],
+    ["object", "division"],
+    ["rules", "community"],
+    ["community", "division"],
+    ["subject", "division"],
+    ["rules", "object"]
+  ]);
 
-  if (dualMode) {
-    // Centre gap: x 580–680, centre at x=630
-    const cx = 630, cy = Oy;
-    const boxW = 80, boxH = 44;
-    const boxX = cx - boxW/2, boxY = cy - boxH/2;
-    const sharedOutTop = boxY - 96;
-    const sharedOutArrowY = boxY - 44;
-    const obj1 = NODES.find(n=>n.id==="object");
-    const obj2 = NODES2.find(n=>n.id==="object_2");
+  const SECONDARY_NODE_DEFINITIONS = Object.freeze(
+    NODE_DEFINITIONS.map((node) => ({
+      ...node,
+      id: `${node.id}_2`,
+      x: GEOMETRY.leftGap + (GEOMETRY.width - node.x),
+      labelOffsetX: -node.labelOffsetX,
+      anchor: node.anchor === "start" ? "end" : node.anchor === "end" ? "start" : "middle"
+    }))
+  );
 
-    // Decorative connecting arrows
-    const centreDecor = el("g",{"aria-hidden":"true"},svg);
-    el("line",{x1:obj1.x+R+GAP+2,y1:cy,x2:boxX-4,y2:cy,
-      stroke:"#595959","stroke-width":"1.5","marker-end":"url(#tip-out)"},centreDecor);
-    el("line",{x1:obj2.x-R-GAP-2,y1:cy,x2:boxX+boxW+4,y2:cy,
-      stroke:"#595959","stroke-width":"1.5","marker-end":"url(#tip-out)"},centreDecor);
-    el("line",{x1:cx,y1:boxY-4,x2:cx,y2:sharedOutArrowY,
-      stroke:"#595959","stroke-width":"1.5","marker-end":"url(#tip-out)"},centreDecor);
+  const SECONDARY_EDGE_DEFINITIONS = Object.freeze(
+    EDGE_DEFINITIONS.map(([from, to]) => [`${from}_2`, `${to}_2`])
+  );
 
-    // Shared Outcome interactive group (label + preview + click area)
-    const sharedOutGroup = el("g",{
-      role:"button", tabindex:"0",
-      "aria-label":"Shared Outcome(s): activate to edit",
-      style:"cursor:pointer"
-    },svg);
-    el("rect",{x:cx-50,y:sharedOutTop,width:100,height:58,rx:"4",
-      fill:"transparent",stroke:"none"},sharedOutGroup);
-    const _soL1 = el("text",{x:cx,y:sharedOutTop+18,"text-anchor":"middle","font-size":"10",fill:"#595959"},sharedOutGroup);
-    _soL1.textContent = "Shared";
-    const _soL2 = el("text",{x:cx,y:sharedOutTop+32,"text-anchor":"middle","font-size":"10",fill:"#595959"},sharedOutGroup);
-    _soL2.textContent = "Outcome(s)";
-    sharedOutPreview = el("text",{x:cx,y:sharedOutTop+48,"text-anchor":"middle","font-size":"9",fill:"#185FA5","font-style":"italic"},sharedOutGroup);
-    sharedOutGroup.addEventListener("click",   () => showSharedEditor("sharedOutcome"));
-    sharedOutGroup.addEventListener("keydown", e => { if(e.key==="Enter"||e.key===" "){ e.preventDefault(); showSharedEditor("sharedOutcome"); } });
+  const NODE_MAP = new Map(NODE_DEFINITIONS.map((node) => [node.id, node]));
+  const ALL_NODES = [...NODE_DEFINITIONS, ...SECONDARY_NODE_DEFINITIONS];
+  const ALL_NODE_MAP = new Map(ALL_NODES.map((node) => [node.id, node]));
+  const FULL_VIEWBOX_WIDTH = GEOMETRY.leftGap + GEOMETRY.width;
 
-    // Shared Object interactive group (box + text + preview)
-    const sharedObjGroup = el("g",{
-      role:"button", tabindex:"0",
-      "aria-label":"Shared Object: activate to edit",
-      style:"cursor:pointer"
-    },svg);
-    el("rect",{x:boxX,y:boxY,width:boxW,height:boxH,rx:"8",
-      fill:"#fff",stroke:"#595959","stroke-width":"1.5"},sharedObjGroup);
-    const _sbL1 = el("text",{x:cx,y:cy-6,"text-anchor":"middle","font-size":"10","font-weight":"600",fill:"#444"},sharedObjGroup);
-    _sbL1.textContent = "Shared";
-    const _sbL2 = el("text",{x:cx,y:cy+6,"text-anchor":"middle","font-size":"10","font-weight":"600",fill:"#444"},sharedObjGroup);
-    _sbL2.textContent = "Object";
-    sharedObjPreview = el("text",{x:cx,y:cy+19,"text-anchor":"middle","font-size":"9",fill:"#185FA5","font-style":"italic"},sharedObjGroup);
-    sharedObjGroup.addEventListener("click",   () => showSharedEditor("sharedObject"));
-    sharedObjGroup.addEventListener("keydown", e => { if(e.key==="Enter"||e.key===" "){ e.preventDefault(); showSharedEditor("sharedObject"); } });
+  const createEmptyNodeValues = () =>
+    Object.fromEntries(NODE_DEFINITIONS.map(({ id }) => [id, ""]));
 
-  } else {
-    // Single mode: outcome arrow + interactive outcome node
-    const obj  = NODES.find(n=>n.id==="object");
-    const arrX = obj.x + R + GAP + 2;
-    const boxX = obj.x + 82;
-    const boxY = obj.y - 14;
-    const cy   = obj.y;
+  const state = {
+    valuesBySystem: {
+      1: createEmptyNodeValues(),
+      2: createEmptyNodeValues()
+    },
+    activeNodeId: null,
+    activeSystem: 1,
+    dualMode: false,
+    sharedObject: "",
+    sharedOutcome: "",
+    outcome: "",
+    contradictions: [],
+    contradictionMode: false,
+    contradictionFirstNodeId: null,
+    contradictionPromptNodes: null,
+    copyResetTimerId: null,
+    announceTimerId: null,
+    legalDialogOpener: null
+  };
 
-    // Decorative arrow
-    const arrowDecor = el("g",{"aria-hidden":"true"},svg);
-    el("line",{x1:arrX,y1:cy,x2:boxX-4,y2:cy,
-      stroke:"#595959","stroke-width":"1.5","marker-end":"url(#tip-out)"},arrowDecor);
+  const svgState = {
+    nodeElements: new Map(),
+    contradictionLayer: null,
+    sharedObjectGroup: null,
+    sharedObjectPreview: null,
+    sharedOutcomeGroup: null,
+    sharedOutcomePreview: null,
+    outcomeGroup: null,
+    outcomePreview: null
+  };
 
-    // Interactive outcome group
-    const outcomeGroup = el("g",{
-      role:"button", tabindex:"0",
-      "aria-label":"Outcome: activate to edit",
-      style:"cursor:pointer"
-    },svg);
-    el("rect",{x:boxX,y:boxY,width:96,height:28,rx:"6",
-      fill:"#fff",stroke:"#595959","stroke-width":"1.5"},outcomeGroup);
-    const _outL = el("text",{x:boxX+48,y:cy-1,"text-anchor":"middle",
-      "font-size":"10","font-weight":"600",fill:"#444"},outcomeGroup);
-    _outL.textContent = "Outcome";
-    outcomePreview = el("text",{x:boxX+48,y:cy+11,"text-anchor":"middle",
-      "font-size":"9",fill:"#185FA5","font-style":"italic"},outcomeGroup);
-    outcomeGroup.addEventListener("click",   () => showSharedEditor("outcome"));
-    outcomeGroup.addEventListener("keydown", e => {
-      if (e.key==="Enter"||e.key===" "){ e.preventDefault(); showSharedEditor("outcome"); }
+  const dom = {
+    app: document.getElementById("app"),
+    svg: document.getElementById("tri"),
+    svgWrap: document.getElementById("svg-wrap"),
+    tooltip: document.getElementById("tooltip"),
+    liveRegion: document.getElementById("live-region"),
+    hintText: document.getElementById("hint-text"),
+    editor: document.getElementById("editor"),
+    editorLabel: document.getElementById("ed-label"),
+    editorGuidance: document.getElementById("ed-guidance"),
+    editorPrompt: document.getElementById("ed-prompt"),
+    editorInput: document.getElementById("ed-input"),
+    contradictionEditor: document.getElementById("contra-editor"),
+    contradictionLabel: document.getElementById("contra-label"),
+    contradictionTypeDescription: document.getElementById("contra-type-desc"),
+    contradictionInput: document.getElementById("contra-input"),
+    contradictionSaveButton: document.getElementById("contra-save-btn"),
+    contradictionCancelButton: document.getElementById("contra-cancel-btn"),
+    contradictionButton: document.getElementById("contra-btn"),
+    contradictionGuide: document.getElementById("contra-guide"),
+    intersystemGuideRow: document.getElementById("cg-intersys"),
+    summaryBody: document.getElementById("summary-body"),
+    summaryHeading: document.getElementById("summary-heading"),
+    notesInput: document.getElementById("notes-input"),
+    copyButton: document.getElementById("copy-btn"),
+    exportInterfaceButton: document.getElementById("export-interface-btn"),
+    exportButton: document.getElementById("export-btn"),
+    exportMenu: document.getElementById("export-menu"),
+    exportWrap: document.getElementById("export-wrap"),
+    dualButton: document.getElementById("dual-btn"),
+    legalButton: document.getElementById("legal-btn"),
+    legalOverlay: document.getElementById("legal-overlay"),
+    legalBox: document.getElementById("legal-box"),
+    legalCloseButton: document.getElementById("legal-close")
+  };
+
+  function setSvgAttributes(element, attributes) {
+    Object.entries(attributes).forEach(([name, value]) => {
+      element.setAttribute(name, value);
     });
   }
 
-  // Contradiction layer (above edges, below nodes)
-  contraLayer = el("g",{"aria-hidden":"true"},svg);
+  function createSvgElement(tagName, attributes = {}, parent = null) {
+    const element = document.createElementNS(SVG_NS, tagName);
+    setSvgAttributes(element, attributes);
+    if (parent) {
+      parent.appendChild(element);
+    }
+    return element;
+  }
 
-  // Draw interactive node groups for one system
-  function drawNodes(nodes) {
-    for (const n of nodes) {
-      const isSys2   = n.id.endsWith("_2");
-      const sysLabel = dualMode ? (isSys2 ? " (System 2)" : " (System 1)") : "";
-      const g = el("g",{
-        role:"button", tabindex:"0",
-        "aria-label":`${n.short}${sysLabel}: empty. Activate to edit.`,
-        style:"cursor:pointer"
-      },svg);
-      el("circle",{cx:n.x,cy:n.y,r:R+5,class:"node-focus-ring"},g);
-      const circle = el("circle",{cx:n.x,cy:n.y,r:R,fill:"white",stroke:"#333","stroke-width":"1.5"},g);
-      const dot    = el("circle",{cx:n.x,cy:n.y,r:4,fill:"transparent","aria-hidden":"true"},g);
-      const t1     = el("text",{x:n.x+n.lx,y:n.y+n.ly,"text-anchor":n.anchor,
-                       "font-size":"12","font-weight":"600",fill:"#222","aria-hidden":"true"},g);
-      t1.textContent = n.lines[0];
-      let t2 = null;
-      if (n.lines[1]) {
-        t2 = el("text",{x:n.x+n.lx,y:n.y+n.ly2,"text-anchor":n.anchor,
-                        "font-size":"12","font-weight":"600",fill:"#222","aria-hidden":"true"},g);
-        t2.textContent = n.lines[1];
+  function appendTextElement(parent, tagName, attributes, textContent) {
+    const element = createSvgElement(tagName, attributes, parent);
+    element.textContent = textContent;
+    return element;
+  }
+
+  function getBaseNodeId(nodeId) {
+    return nodeId.endsWith("_2") ? nodeId.slice(0, -2) : nodeId;
+  }
+
+  function getStoreForNode(nodeId) {
+    return state.valuesBySystem[nodeId.endsWith("_2") ? 2 : 1];
+  }
+
+  function getNodeDefinition(nodeId) {
+    return NODE_MAP.get(getBaseNodeId(nodeId));
+  }
+
+  function getRenderedNodes() {
+    return state.dualMode ? ALL_NODES : NODE_DEFINITIONS;
+  }
+
+  function getRenderedEdges() {
+    return state.dualMode
+      ? [
+          [NODE_DEFINITIONS, EDGE_DEFINITIONS],
+          [SECONDARY_NODE_DEFINITIONS, SECONDARY_EDGE_DEFINITIONS]
+        ]
+      : [[NODE_DEFINITIONS, EDGE_DEFINITIONS]];
+  }
+
+  function shortenLine(x1, y1, x2, y2) {
+    const deltaX = x2 - x1;
+    const deltaY = y2 - y1;
+    const lineLength = Math.sqrt((deltaX ** 2) + (deltaY ** 2));
+
+    if (lineLength < 1) {
+      return { x1, y1, x2, y2 };
+    }
+
+    const padding = GEOMETRY.nodeRadius + GEOMETRY.edgeGap + 10;
+    const unitX = deltaX / lineLength;
+    const unitY = deltaY / lineLength;
+
+    return {
+      x1: x1 + (unitX * padding),
+      y1: y1 + (unitY * padding),
+      x2: x2 - (unitX * padding),
+      y2: y2 - (unitY * padding)
+    };
+  }
+
+  function buildMarkers(definitionsGroup) {
+    const createMarker = (id, refX, reverse) => {
+      const marker = createSvgElement(
+        "marker",
+        {
+          id,
+          markerWidth: "8",
+          markerHeight: "8",
+          refX: String(refX),
+          refY: "4",
+          orient: reverse ? "auto-start-reverse" : "auto",
+          markerUnits: "userSpaceOnUse"
+        },
+        definitionsGroup
+      );
+
+      createSvgElement(
+        "path",
+        {
+          d: "M0,1 L7,4 L0,7 z",
+          fill: id === "tip-out" ? "#595959" : "#333"
+        },
+        marker
+      );
+    };
+
+    createMarker("tip-end", 0, false);
+    createMarker("tip-start", 7, true);
+    createMarker("tip-out", 0, false);
+  }
+
+  function renderTooltip(node) {
+    if (state.activeNodeId) {
+      return;
+    }
+
+    const baseNodeId = getBaseNodeId(node.id);
+    const wrapWidth = dom.svgWrap.offsetWidth;
+    const wrapHeight = dom.svgWrap.offsetHeight;
+    const viewBoxWidth = state.dualMode ? FULL_VIEWBOX_WIDTH : GEOMETRY.width;
+    const scale = Math.min(wrapWidth / viewBoxWidth, wrapHeight / GEOMETRY.height);
+    const contentWidth = viewBoxWidth * scale;
+    const offsetX = (wrapWidth - contentWidth) / 2;
+
+    const strong = document.createElement("strong");
+    strong.style.color = NODE_COLORS[baseNodeId];
+    strong.textContent = node.short;
+
+    dom.tooltip.replaceChildren(
+      strong,
+      document.createElement("br"),
+      document.createTextNode(node.guidance)
+    );
+    dom.tooltip.style.display = "block";
+    dom.tooltip.style.borderColor = NODE_COLORS[baseNodeId];
+
+    let left = offsetX + (node.x * scale) + (node.labelOffsetX || 0) - 90;
+    let top = (node.y * scale) + (node.labelOffsetY < 0 ? -90 : 20);
+
+    left = Math.max(0, Math.min(left, wrapWidth - 190));
+    top = Math.max(0, top);
+
+    dom.tooltip.style.left = `${left}px`;
+    dom.tooltip.style.top = `${top}px`;
+  }
+
+  function hideTooltip() {
+    dom.tooltip.style.display = "none";
+  }
+
+  function announce(message) {
+    window.clearTimeout(state.announceTimerId);
+    dom.liveRegion.textContent = "";
+    state.announceTimerId = window.setTimeout(() => {
+      dom.liveRegion.textContent = message;
+    }, 100);
+  }
+
+  function getNodeSystemLabel(nodeId) {
+    if (!state.dualMode) {
+      return "";
+    }
+    return nodeId.endsWith("_2") ? " (System 2)" : " (System 1)";
+  }
+
+  function updateNodeAriaLabel(nodeId) {
+    const nodeDefinition = getNodeDefinition(nodeId);
+    const nodeElement = svgState.nodeElements.get(nodeId);
+
+    if (!nodeDefinition || !nodeElement) {
+      return;
+    }
+
+    const currentValue = getStoreForNode(nodeId)[getBaseNodeId(nodeId)].trim();
+    const systemLabel = getNodeSystemLabel(nodeId);
+    let ariaLabel = "";
+
+    if (state.contradictionMode) {
+      if (state.contradictionFirstNodeId === nodeId) {
+        ariaLabel = `${nodeDefinition.short}${systemLabel} selected. Activate again for a primary contradiction, or activate another node for a secondary contradiction.`;
+      } else {
+        ariaLabel = currentValue
+          ? `${nodeDefinition.short}${systemLabel}: ${currentValue}. Activate to select for contradiction.`
+          : `${nodeDefinition.short}${systemLabel}: empty. Activate to select for contradiction.`;
       }
-      const tp = el("text",{
-        x:n.x+n.lx,
-        y:n.y+(n.ly<0 ? n.ly-14 : n.ly2 ? n.ly2+14 : n.ly+14),
-        "text-anchor":n.anchor,"font-size":"10",fill:"#555","font-style":"italic","aria-hidden":"true"
-      },g);
-      nodeEls[n.id] = {g, circle, dot, t1, t2, tp};
-      g.addEventListener("click",     ()  => activateNode(n.id));
-      g.addEventListener("keydown",   e   => { if(e.key==="Enter"||e.key===" "){ e.preventDefault(); activateNode(n.id); } });
-      g.addEventListener("mouseenter",()  => showTooltip(n));
-      g.addEventListener("mouseleave",()  => hideTooltip());
-    }
-  }
-
-  drawNodes(NODES);
-  if (dualMode) drawNodes(NODES2);
-
-  // Refresh visuals after rebuild
-  for (const n of allActiveNodes()) updateNodeVisual(n.id);
-  renderContradictions();
-  updateSharedPreviews();
-}
-
-/* ── Node aria-label ── */
-function updateNodeAriaLabel(id) {
-  const n    = nodeDef(id);
-  const {g}  = nodeEls[id];
-  const isSys2   = id.endsWith("_2");
-  const sysLabel = dualMode ? (isSys2 ? " (System 2)" : " (System 1)") : "";
-  const store = storeFor(id);
-  const val   = store[baseId(id)].trim();
-  let label;
-  if (contraMode) {
-    if (contraFirst === id) {
-      label = `${n.short}${sysLabel} selected. Activate again for a primary contradiction, or activate another node for a secondary contradiction.`;
     } else {
-      label = val
-        ? `${n.short}${sysLabel}: ${val}. Activate to select for contradiction.`
-        : `${n.short}${sysLabel}: empty. Activate to select for contradiction.`;
+      ariaLabel = currentValue
+        ? `${nodeDefinition.short}${systemLabel}: ${currentValue}. Activate to edit.`
+        : `${nodeDefinition.short}${systemLabel}: empty. Activate to edit.`;
     }
-  } else {
-    label = val
-      ? `${n.short}${sysLabel}: ${val}. Activate to edit.`
-      : `${n.short}${sysLabel}: empty. Activate to edit.`;
+
+    nodeElement.group.setAttribute("aria-label", ariaLabel);
   }
-  g.setAttribute("aria-label", label);
-}
 
-/* ── Node visuals ── */
-function updateNodeVisual(id) {
-  const {circle,dot,t1,t2,tp} = nodeEls[id];
-  const store  = storeFor(id);
-  const bid    = baseId(id);
-  const filled = store[bid].trim();
-  const isActive      = activeId===id;
-  const isContraFirst = contraMode && contraFirst===id && contraPromptNodes===null;
-  const c = COL[bid];
-  circle.setAttribute("stroke",       isContraFirst?"#b45309": isActive||filled?c:"#333");
-  circle.setAttribute("stroke-width", isActive||isContraFirst?"2.5":"1.5");
-  dot.setAttribute("fill",            filled?c:"transparent");
-  const textCol = filled||isActive?c:"#222";
-  t1.setAttribute("fill", textCol);
-  if(t2) t2.setAttribute("fill", textCol);
-  const preview = filled?(filled.length>18?filled.slice(0,16)+"…":filled):"";
-  tp.textContent = preview;
-  tp.setAttribute("fill", c);
-  updateNodeAriaLabel(id);
-}
+  function updateSharedGroupAriaLabels() {
+    if (svgState.sharedObjectGroup) {
+      const value = state.sharedObject.trim() || "empty";
+      svgState.sharedObjectGroup.setAttribute("aria-label", `Shared Object: ${value}. Activate to edit.`);
+    }
 
-/* ── Activate a node ── */
-function activateNode(id) {
-  if (contraMode) { handleContraNodeClick(id); return; }
-  activeSystem = id.endsWith("_2") ? 2 : 1;
-  if (activeId===id) { activeId=null; hideEditor(); }
-  else               { activeId=id;  showEditor(id); }
-  for (const n of allActiveNodes()) updateNodeVisual(n.id);
-}
+    if (svgState.sharedOutcomeGroup) {
+      const value = state.sharedOutcome.trim() || "empty";
+      svgState.sharedOutcomeGroup.setAttribute("aria-label", `Shared Outcome(s): ${value}. Activate to edit.`);
+    }
 
-/* ── Editor ── */
-const editor     = document.getElementById("editor");
-const edLabel    = document.getElementById("ed-label");
-const edGuidance = document.getElementById("ed-guidance");
-const edPrompt   = document.getElementById("ed-prompt");
-const edInput    = document.getElementById("ed-input");
-
-function showEditor(id) {
-  const bid   = baseId(id);
-  const n     = NODES.find(x=>x.id===bid);
-  const store = storeFor(id);
-  const sysLabel = dualMode ? ` — System ${activeSystem}` : "";
-  editor.style.display   = "block";
-  editor.style.border    = `2px solid ${COL[bid]}`;
-  edLabel.style.color    = COL[bid];
-  edLabel.textContent    = n.label + sysLabel;
-  edGuidance.textContent = n.guidance;
-  edPrompt.textContent   = n.prompt;
-  edInput.value = store[bid];
-  edInput.focus();
-  edInput.oninput = () => { store[bid]=edInput.value; updateNodeVisual(id); updateSummary(); };
-}
-
-function showSharedEditor(which) {
-  const isSO  = which === "sharedObject";
-  const isSOC = which === "sharedOutcome";
-  const isOut = which === "outcome";
-  editor.style.display = "block";
-  editor.style.border  = "2px solid #595959";
-  edLabel.style.color  = "#595959";
-  if (isSO) {
-    edLabel.textContent    = "Shared Object";
-    edGuidance.textContent = "What do both activity systems share as their common object or goal?";
-    edPrompt.textContent   = "What is the shared object or goal connecting both systems?";
-    edInput.value          = sharedObject;
-  } else if (isSOC) {
-    edLabel.textContent    = "Shared Outcome(s)";
-    edGuidance.textContent = "What is the shared outcome produced by both activity systems working together?";
-    edPrompt.textContent   = "What outcome do both systems jointly produce?";
-    edInput.value          = sharedOutcome;
-  } else {
-    edLabel.textContent    = "Outcome";
-    edGuidance.textContent = "The result of the object's transformation through the activity — what the activity produces or changes.";
-    edPrompt.textContent   = "What does the activity produce? What change or result occurs through the transformation of the object?";
-    edInput.value          = outcomeVal;
+    if (svgState.outcomeGroup) {
+      const value = state.outcome.trim() || "empty";
+      svgState.outcomeGroup.setAttribute("aria-label", `Outcome: ${value}. Activate to edit.`);
+    }
   }
-  edInput.focus();
-  edInput.oninput = () => {
-    if (isSO)       sharedObject  = edInput.value;
-    else if (isSOC) sharedOutcome = edInput.value;
-    else            outcomeVal    = edInput.value;
+
+  function updateNodeVisual(nodeId) {
+    const nodeElement = svgState.nodeElements.get(nodeId);
+    if (!nodeElement) {
+      return;
+    }
+
+    const baseNodeId = getBaseNodeId(nodeId);
+    const nodeColor = NODE_COLORS[baseNodeId];
+    const nodeValue = getStoreForNode(nodeId)[baseNodeId].trim();
+    const isActive = state.activeNodeId === nodeId;
+    const isFirstContradictionNode =
+      state.contradictionMode &&
+      state.contradictionFirstNodeId === nodeId &&
+      state.contradictionPromptNodes === null;
+
+    nodeElement.circle.setAttribute(
+      "stroke",
+      isFirstContradictionNode ? "#b45309" : (isActive || nodeValue ? nodeColor : "#333")
+    );
+    nodeElement.circle.setAttribute(
+      "stroke-width",
+      isActive || isFirstContradictionNode ? "2.5" : "1.5"
+    );
+    nodeElement.dot.setAttribute("fill", nodeValue ? nodeColor : "transparent");
+
+    const labelColor = nodeValue || isActive ? nodeColor : "#222";
+    nodeElement.primaryLabel.setAttribute("fill", labelColor);
+    if (nodeElement.secondaryLabel) {
+      nodeElement.secondaryLabel.setAttribute("fill", labelColor);
+    }
+
+    const previewText = nodeValue
+      ? (nodeValue.length > 18 ? `${nodeValue.slice(0, 16)}…` : nodeValue)
+      : "";
+    nodeElement.preview.textContent = previewText;
+    nodeElement.preview.setAttribute("fill", nodeColor);
+
+    updateNodeAriaLabel(nodeId);
+  }
+
+  function updateAllNodeVisuals() {
+    getRenderedNodes().forEach((node) => updateNodeVisual(node.id));
+    updateSharedGroupAriaLabels();
+  }
+
+  function buildInteractiveGroup({ label, onActivate }) {
+    const group = createSvgElement(
+      "g",
+      {
+        role: "button",
+        tabindex: "0",
+        "aria-label": label,
+        style: "cursor:pointer"
+      }
+    );
+
+    group.addEventListener("click", onActivate);
+    group.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        onActivate();
+      }
+    });
+
+    return group;
+  }
+
+  function renderSharedControls() {
+    if (state.dualMode) {
+      renderDualModeSharedControls();
+      return;
+    }
+
+    renderSingleModeOutcome();
+  }
+
+  function renderDualModeSharedControls() {
+    const centerX = 630;
+    const centerY = OBJECT_Y;
+    const boxWidth = 80;
+    const boxHeight = 44;
+    const boxX = centerX - (boxWidth / 2);
+    const boxY = centerY - (boxHeight / 2);
+    const sharedOutcomeTop = boxY - 96;
+    const sharedOutcomeArrowY = boxY - 44;
+    const systemOneObject = NODE_DEFINITIONS.find((node) => node.id === "object");
+    const systemTwoObject = SECONDARY_NODE_DEFINITIONS.find((node) => node.id === "object_2");
+
+    const decorativeGroup = createSvgElement("g", { "aria-hidden": "true" }, dom.svg);
+    createSvgElement(
+      "line",
+      {
+        x1: systemOneObject.x + GEOMETRY.nodeRadius + GEOMETRY.edgeGap + 2,
+        y1: centerY,
+        x2: boxX - 4,
+        y2: centerY,
+        stroke: "#595959",
+        "stroke-width": "1.5",
+        "marker-end": "url(#tip-out)"
+      },
+      decorativeGroup
+    );
+    createSvgElement(
+      "line",
+      {
+        x1: systemTwoObject.x - GEOMETRY.nodeRadius - GEOMETRY.edgeGap - 2,
+        y1: centerY,
+        x2: boxX + boxWidth + 4,
+        y2: centerY,
+        stroke: "#595959",
+        "stroke-width": "1.5",
+        "marker-end": "url(#tip-out)"
+      },
+      decorativeGroup
+    );
+    createSvgElement(
+      "line",
+      {
+        x1: centerX,
+        y1: boxY - 4,
+        x2: centerX,
+        y2: sharedOutcomeArrowY,
+        stroke: "#595959",
+        "stroke-width": "1.5",
+        "marker-end": "url(#tip-out)"
+      },
+      decorativeGroup
+    );
+
+    const sharedOutcomeGroup = buildInteractiveGroup({
+      label: "Shared Outcome(s): empty. Activate to edit.",
+      onActivate: () => showSharedEditor("sharedOutcome")
+    });
+    dom.svg.appendChild(sharedOutcomeGroup);
+    createSvgElement(
+      "rect",
+      {
+        x: centerX - 50,
+        y: sharedOutcomeTop,
+        width: 100,
+        height: 58,
+        rx: "4",
+        fill: "transparent",
+        stroke: "none"
+      },
+      sharedOutcomeGroup
+    );
+    createSvgElement(
+      "rect",
+      {
+        x: centerX - 52,
+        y: sharedOutcomeTop - 2,
+        width: 104,
+        height: 62,
+        rx: "6",
+        class: "interactive-focus-ring"
+      },
+      sharedOutcomeGroup
+    );
+    appendTextElement(
+      sharedOutcomeGroup,
+      "text",
+      { x: centerX, y: sharedOutcomeTop + 18, "text-anchor": "middle", "font-size": "10", fill: "#595959" },
+      "Shared"
+    );
+    appendTextElement(
+      sharedOutcomeGroup,
+      "text",
+      { x: centerX, y: sharedOutcomeTop + 32, "text-anchor": "middle", "font-size": "10", fill: "#595959" },
+      "Outcome(s)"
+    );
+    svgState.sharedOutcomePreview = appendTextElement(
+      sharedOutcomeGroup,
+      "text",
+      { x: centerX, y: sharedOutcomeTop + 48, "text-anchor": "middle", "font-size": "9", fill: "#185FA5", "font-style": "italic" },
+      ""
+    );
+    svgState.sharedOutcomeGroup = sharedOutcomeGroup;
+
+    const sharedObjectGroup = buildInteractiveGroup({
+      label: "Shared Object: empty. Activate to edit.",
+      onActivate: () => showSharedEditor("sharedObject")
+    });
+    dom.svg.appendChild(sharedObjectGroup);
+    createSvgElement(
+      "rect",
+      {
+        x: boxX - 2,
+        y: boxY - 2,
+        width: boxWidth + 4,
+        height: boxHeight + 4,
+        rx: "10",
+        class: "interactive-focus-ring"
+      },
+      sharedObjectGroup
+    );
+    createSvgElement(
+      "rect",
+      {
+        x: boxX,
+        y: boxY,
+        width: boxWidth,
+        height: boxHeight,
+        rx: "8",
+        fill: "#fff",
+        stroke: "#595959",
+        "stroke-width": "1.5"
+      },
+      sharedObjectGroup
+    );
+    appendTextElement(
+      sharedObjectGroup,
+      "text",
+      { x: centerX, y: centerY - 6, "text-anchor": "middle", "font-size": "10", "font-weight": "600", fill: "#444" },
+      "Shared"
+    );
+    appendTextElement(
+      sharedObjectGroup,
+      "text",
+      { x: centerX, y: centerY + 6, "text-anchor": "middle", "font-size": "10", "font-weight": "600", fill: "#444" },
+      "Object"
+    );
+    svgState.sharedObjectPreview = appendTextElement(
+      sharedObjectGroup,
+      "text",
+      { x: centerX, y: centerY + 19, "text-anchor": "middle", "font-size": "9", fill: "#185FA5", "font-style": "italic" },
+      ""
+    );
+    svgState.sharedObjectGroup = sharedObjectGroup;
+  }
+
+  function renderSingleModeOutcome() {
+    const objectNode = NODE_DEFINITIONS.find((node) => node.id === "object");
+    const arrowStartX = objectNode.x + GEOMETRY.nodeRadius + GEOMETRY.edgeGap + 2;
+    const boxX = objectNode.x + 82;
+    const boxY = objectNode.y - 14;
+    const centerY = objectNode.y;
+
+    const decorativeGroup = createSvgElement("g", { "aria-hidden": "true" }, dom.svg);
+    createSvgElement(
+      "line",
+      {
+        x1: arrowStartX,
+        y1: centerY,
+        x2: boxX - 4,
+        y2: centerY,
+        stroke: "#595959",
+        "stroke-width": "1.5",
+        "marker-end": "url(#tip-out)"
+      },
+      decorativeGroup
+    );
+
+    const outcomeGroup = buildInteractiveGroup({
+      label: "Outcome: empty. Activate to edit.",
+      onActivate: () => showSharedEditor("outcome")
+    });
+    dom.svg.appendChild(outcomeGroup);
+    createSvgElement(
+      "rect",
+      {
+        x: boxX - 2,
+        y: boxY - 2,
+        width: 100,
+        height: 32,
+        rx: "8",
+        class: "interactive-focus-ring"
+      },
+      outcomeGroup
+    );
+    createSvgElement(
+      "rect",
+      {
+        x: boxX,
+        y: boxY,
+        width: 96,
+        height: 28,
+        rx: "6",
+        fill: "#fff",
+        stroke: "#595959",
+        "stroke-width": "1.5"
+      },
+      outcomeGroup
+    );
+    appendTextElement(
+      outcomeGroup,
+      "text",
+      {
+        x: boxX + 48,
+        y: centerY - 1,
+        "text-anchor": "middle",
+        "font-size": "10",
+        "font-weight": "600",
+        fill: "#444"
+      },
+      "Outcome"
+    );
+    svgState.outcomePreview = appendTextElement(
+      outcomeGroup,
+      "text",
+      {
+        x: boxX + 48,
+        y: centerY + 11,
+        "text-anchor": "middle",
+        "font-size": "9",
+        fill: "#185FA5",
+        "font-style": "italic"
+      },
+      ""
+    );
+    svgState.outcomeGroup = outcomeGroup;
+  }
+
+  function renderEdges(nodes, edges) {
+    const group = createSvgElement("g", { "aria-hidden": "true" }, dom.svg);
+
+    edges.forEach(([fromId, toId]) => {
+      const fromNode = nodes.find((node) => node.id === fromId);
+      const toNode = nodes.find((node) => node.id === toId);
+      const shortenedLine = shortenLine(fromNode.x, fromNode.y, toNode.x, toNode.y);
+
+      createSvgElement(
+        "line",
+        {
+          x1: shortenedLine.x1,
+          y1: shortenedLine.y1,
+          x2: shortenedLine.x2,
+          y2: shortenedLine.y2,
+          stroke: "#333",
+          "stroke-width": "1.5",
+          "marker-start": "url(#tip-start)",
+          "marker-end": "url(#tip-end)"
+        },
+        group
+      );
+    });
+  }
+
+  function activateNode(nodeId) {
+    if (state.contradictionMode) {
+      handleContradictionNodeActivation(nodeId);
+      return;
+    }
+
+    state.activeSystem = nodeId.endsWith("_2") ? 2 : 1;
+
+    if (state.activeNodeId === nodeId) {
+      state.activeNodeId = null;
+      hideEditor();
+    } else {
+      state.activeNodeId = nodeId;
+      showEditor(nodeId);
+    }
+
+    updateAllNodeVisuals();
+  }
+
+  function renderNodeGroups(nodes) {
+    nodes.forEach((node) => {
+      const systemLabel = getNodeSystemLabel(node.id);
+      const group = buildInteractiveGroup({
+        label: `${node.short}${systemLabel}: empty. Activate to edit.`,
+        onActivate: () => activateNode(node.id)
+      });
+
+      group.addEventListener("mouseenter", () => renderTooltip(node));
+      group.addEventListener("mouseleave", hideTooltip);
+
+      dom.svg.appendChild(group);
+      createSvgElement(
+        "circle",
+        { cx: node.x, cy: node.y, r: GEOMETRY.nodeRadius + 5, class: "node-focus-ring" },
+        group
+      );
+      const circle = createSvgElement(
+        "circle",
+        {
+          cx: node.x,
+          cy: node.y,
+          r: GEOMETRY.nodeRadius,
+          fill: "white",
+          stroke: "#333",
+          "stroke-width": "1.5"
+        },
+        group
+      );
+      const dot = createSvgElement(
+        "circle",
+        {
+          cx: node.x,
+          cy: node.y,
+          r: 4,
+          fill: "transparent",
+          "aria-hidden": "true"
+        },
+        group
+      );
+      const primaryLabel = appendTextElement(
+        group,
+        "text",
+        {
+          x: node.x + node.labelOffsetX,
+          y: node.y + node.labelOffsetY,
+          "text-anchor": node.anchor,
+          "font-size": "12",
+          "font-weight": "600",
+          fill: "#222",
+          "aria-hidden": "true"
+        },
+        node.lines[0]
+      );
+
+      let secondaryLabel = null;
+      if (node.lines[1]) {
+        secondaryLabel = appendTextElement(
+          group,
+          "text",
+          {
+            x: node.x + node.labelOffsetX,
+            y: node.y + node.secondaryLabelOffsetY,
+            "text-anchor": node.anchor,
+            "font-size": "12",
+            "font-weight": "600",
+            fill: "#222",
+            "aria-hidden": "true"
+          },
+          node.lines[1]
+        );
+      }
+
+      const previewY = node.labelOffsetY < 0
+        ? node.labelOffsetY - 14
+        : (node.secondaryLabelOffsetY ? node.secondaryLabelOffsetY + 14 : node.labelOffsetY + 14);
+      const preview = appendTextElement(
+        group,
+        "text",
+        {
+          x: node.x + node.labelOffsetX,
+          y: node.y + previewY,
+          "text-anchor": node.anchor,
+          "font-size": "10",
+          fill: "#555",
+          "font-style": "italic",
+          "aria-hidden": "true"
+        },
+        ""
+      );
+
+      svgState.nodeElements.set(node.id, {
+        group,
+        circle,
+        dot,
+        primaryLabel,
+        secondaryLabel,
+        preview
+      });
+    });
+  }
+
+  function buildSvg() {
+    dom.svg.replaceChildren();
+    svgState.nodeElements = new Map();
+    svgState.contradictionLayer = null;
+    svgState.sharedObjectGroup = null;
+    svgState.sharedObjectPreview = null;
+    svgState.sharedOutcomeGroup = null;
+    svgState.sharedOutcomePreview = null;
+    svgState.outcomeGroup = null;
+    svgState.outcomePreview = null;
+
+    const viewBoxWidth = state.dualMode ? FULL_VIEWBOX_WIDTH : GEOMETRY.width;
+    dom.svg.setAttribute("viewBox", `0 0 ${viewBoxWidth} ${GEOMETRY.height}`);
+    dom.svg.setAttribute(
+      "aria-label",
+      state.dualMode
+        ? "Engeström Activity System — two activity triangles with shared object"
+        : "Engeström Activity System Triangle — six interactive nodes: Tools, Subject, Object, Rules, Community, Division of Labour"
+    );
+
+    const definitions = createSvgElement("defs", {}, dom.svg);
+    buildMarkers(definitions);
+
+    getRenderedEdges().forEach(([nodes, edges]) => {
+      renderEdges(nodes, edges);
+    });
+
+    renderSharedControls();
+
+    svgState.contradictionLayer = createSvgElement("g", { "aria-hidden": "true" }, dom.svg);
+    renderNodeGroups(NODE_DEFINITIONS);
+
+    if (state.dualMode) {
+      renderNodeGroups(SECONDARY_NODE_DEFINITIONS);
+    }
+
+    renderContradictions();
     updateSharedPreviews();
+    updateAllNodeVisuals();
+  }
+
+  function showEditor(nodeId) {
+    const baseNodeId = getBaseNodeId(nodeId);
+    const nodeDefinition = getNodeDefinition(nodeId);
+    const store = getStoreForNode(nodeId);
+    const systemLabel = state.dualMode ? ` — System ${state.activeSystem}` : "";
+
+    dom.editor.hidden = false;
+    dom.editor.style.border = `2px solid ${NODE_COLORS[baseNodeId]}`;
+    dom.editorLabel.style.color = NODE_COLORS[baseNodeId];
+    dom.editorLabel.textContent = `${nodeDefinition.label}${systemLabel}`;
+    dom.editorGuidance.textContent = nodeDefinition.guidance;
+    dom.editorPrompt.textContent = nodeDefinition.prompt;
+    dom.editorInput.value = store[baseNodeId];
+    dom.editorInput.focus();
+
+    dom.editorInput.oninput = () => {
+      store[baseNodeId] = dom.editorInput.value;
+      updateNodeVisual(nodeId);
+      updateSummary();
+    };
+  }
+
+  function showSharedEditor(editorType) {
+    const isSharedObject = editorType === "sharedObject";
+    const isSharedOutcome = editorType === "sharedOutcome";
+
+    dom.editor.hidden = false;
+    dom.editor.style.border = "2px solid #595959";
+    dom.editorLabel.style.color = "#595959";
+
+    if (isSharedObject) {
+      dom.editorLabel.textContent = "Shared Object";
+      dom.editorGuidance.textContent = "What do both activity systems share as their common object or goal?";
+      dom.editorPrompt.textContent = "What is the shared object or goal connecting both systems?";
+      dom.editorInput.value = state.sharedObject;
+    } else if (isSharedOutcome) {
+      dom.editorLabel.textContent = "Shared Outcome(s)";
+      dom.editorGuidance.textContent = "What is the shared outcome produced by both activity systems working together?";
+      dom.editorPrompt.textContent = "What outcome do both systems jointly produce?";
+      dom.editorInput.value = state.sharedOutcome;
+    } else {
+      dom.editorLabel.textContent = "Outcome";
+      dom.editorGuidance.textContent = "The result of the object's transformation through the activity — what the activity produces or changes.";
+      dom.editorPrompt.textContent = "What does the activity produce? What change or result occurs through the transformation of the object?";
+      dom.editorInput.value = state.outcome;
+    }
+
+    dom.editorInput.focus();
+    dom.editorInput.oninput = () => {
+      if (isSharedObject) {
+        state.sharedObject = dom.editorInput.value;
+      } else if (isSharedOutcome) {
+        state.sharedOutcome = dom.editorInput.value;
+      } else {
+        state.outcome = dom.editorInput.value;
+      }
+
+      updateSharedPreviews();
+      updateSummary();
+    };
+
+    state.activeNodeId = null;
+    updateAllNodeVisuals();
+  }
+
+  function hideEditor() {
+    dom.editor.hidden = true;
+  }
+
+  function updateSharedPreviews() {
+    const truncatePreview = (value) => {
+      const trimmedValue = value.trim();
+      if (!trimmedValue) {
+        return "";
+      }
+      return trimmedValue.length > 12 ? `${trimmedValue.slice(0, 10)}…` : trimmedValue;
+    };
+
+    if (svgState.sharedObjectPreview) {
+      svgState.sharedObjectPreview.textContent = truncatePreview(state.sharedObject);
+    }
+
+    if (svgState.sharedOutcomePreview) {
+      svgState.sharedOutcomePreview.textContent = truncatePreview(state.sharedOutcome);
+    }
+
+    if (svgState.outcomePreview) {
+      svgState.outcomePreview.textContent = truncatePreview(state.outcome);
+    }
+
+    updateSharedGroupAriaLabels();
+  }
+
+  function renderContradictions() {
+    if (!svgState.contradictionLayer) {
+      return;
+    }
+
+    svgState.contradictionLayer.replaceChildren();
+
+    state.contradictions.forEach((contradiction) => {
+      if (contradiction.type === "primary") {
+        const node = ALL_NODE_MAP.get(contradiction.nodes[0]);
+        if (!node) {
+          return;
+        }
+
+        createSvgElement(
+          "circle",
+          {
+            cx: node.x,
+            cy: node.y,
+            r: GEOMETRY.nodeRadius + 7,
+            fill: "none",
+            stroke: "#b45309",
+            "stroke-width": "2",
+            "stroke-dasharray": "3,2.5"
+          },
+          svgState.contradictionLayer
+        );
+        return;
+      }
+
+      const firstNode = ALL_NODE_MAP.get(contradiction.nodes[0]);
+      const secondNode = ALL_NODE_MAP.get(contradiction.nodes[1]);
+      if (!firstNode || !secondNode) {
+        return;
+      }
+
+      const midpointX = (firstNode.x + secondNode.x) / 2;
+      const midpointY = (firstNode.y + secondNode.y) / 2;
+      const isInterSystemic = contradiction.type === "intersystemic";
+
+      createSvgElement(
+        "line",
+        {
+          x1: firstNode.x,
+          y1: firstNode.y,
+          x2: secondNode.x,
+          y2: secondNode.y,
+          stroke: isInterSystemic ? "#7c3aed" : "#c0392b",
+          "stroke-width": "2",
+          "stroke-dasharray": isInterSystemic ? "8,4" : "6,3",
+          opacity: isInterSystemic ? "0.75" : "0.8"
+        },
+        svgState.contradictionLayer
+      );
+
+      appendTextElement(
+        svgState.contradictionLayer,
+        "text",
+        {
+          x: midpointX,
+          y: midpointY - (isInterSystemic ? 8 : 7),
+          "text-anchor": "middle",
+          "font-size": isInterSystemic ? "14" : "13",
+          fill: isInterSystemic ? "#7c3aed" : "#c0392b"
+        },
+        isInterSystemic ? "↔" : "⚡"
+      );
+    });
+  }
+
+  function setContradictionMode(isEnabled) {
+    state.contradictionMode = isEnabled;
+    state.contradictionFirstNodeId = null;
+    state.contradictionPromptNodes = null;
+    dom.contradictionEditor.hidden = true;
+    dom.contradictionButton.classList.toggle("btn-contra-active", isEnabled);
+    dom.contradictionButton.setAttribute("aria-pressed", String(isEnabled));
+
+    if (isEnabled) {
+      hideEditor();
+      state.activeNodeId = null;
+      dom.hintText.textContent = "Select nodes to mark contradictions — see guidance in the Summary panel.";
+      dom.contradictionGuide.hidden = false;
+    } else {
+      dom.hintText.textContent = "Click a node to edit it. Hover for guidance.";
+      dom.contradictionGuide.hidden = true;
+    }
+
+    dom.intersystemGuideRow.hidden = !(isEnabled && state.dualMode);
+    updateAllNodeVisuals();
+  }
+
+  function showContradictionPrompt(type, nodeIds) {
+    state.contradictionPromptNodes = nodeIds;
+    dom.contradictionEditor.hidden = false;
+
+    if (type === "primary") {
+      const node = getNodeDefinition(nodeIds[0]);
+      dom.contradictionLabel.textContent = `⚡ Primary Contradiction — ${node.short}`;
+      dom.contradictionTypeDescription.textContent = "A tension within this single component. Describe what is pulling against itself.";
+    } else if (type === "secondary") {
+      const firstNode = getNodeDefinition(nodeIds[0]);
+      const secondNode = getNodeDefinition(nodeIds[1]);
+      dom.contradictionLabel.textContent = `⚡ Secondary Contradiction — ${firstNode.short} ↔ ${secondNode.short}`;
+      dom.contradictionTypeDescription.textContent = "A tension between these two components. Describe how they pull in different directions.";
+    } else {
+      const firstNode = getNodeDefinition(nodeIds[0]);
+      const secondNode = getNodeDefinition(nodeIds[1]);
+      const firstSystem = nodeIds[0].endsWith("_2") ? 2 : 1;
+      const secondSystem = nodeIds[1].endsWith("_2") ? 2 : 1;
+      dom.contradictionLabel.textContent = `↔ Inter-systemic Contradiction — ${firstNode.short} (Sys ${firstSystem}) ↔ ${secondNode.short} (Sys ${secondSystem})`;
+      dom.contradictionTypeDescription.textContent = "A tension between the two activity systems. Describe how their goals, rules, or tools conflict across the boundary.";
+    }
+
+    dom.contradictionInput.value = "";
+    dom.contradictionInput.focus();
+    dom.contradictionSaveButton.onclick = () => saveContradiction(type, nodeIds);
+  }
+
+  function cancelContradictionPrompt() {
+    state.contradictionPromptNodes = null;
+    state.contradictionFirstNodeId = null;
+    dom.contradictionEditor.hidden = true;
+    updateAllNodeVisuals();
+  }
+
+  function saveContradiction(type, nodeIds) {
+    const description = dom.contradictionInput.value.trim();
+    state.contradictions.push({ type, nodes: nodeIds, description });
+    renderContradictions();
+
+    const firstNode = getNodeDefinition(nodeIds[0]);
+    let message = "";
+
+    if (type === "primary") {
+      message = `Primary contradiction saved for ${firstNode.short}.`;
+    } else if (type === "secondary") {
+      const secondNode = getNodeDefinition(nodeIds[1]);
+      message = `Secondary contradiction saved between ${firstNode.short} and ${secondNode.short}.`;
+    } else {
+      const secondNode = getNodeDefinition(nodeIds[1]);
+      message = `Inter-systemic contradiction saved between ${firstNode.short} and ${secondNode.short}.`;
+    }
+
+    announce(message);
+    cancelContradictionPrompt();
     updateSummary();
-  };
-  activeId = null;
-  for (const n of allActiveNodes()) updateNodeVisual(n.id);
-}
-
-function updateSharedPreviews() {
-  if (sharedObjPreview) {
-    const p = sharedObject.trim();
-    sharedObjPreview.textContent = p ? (p.length>12 ? p.slice(0,10)+"…" : p) : "";
   }
-  if (sharedOutPreview) {
-    const p = sharedOutcome.trim();
-    sharedOutPreview.textContent = p ? (p.length>12 ? p.slice(0,10)+"…" : p) : "";
-  }
-  if (outcomePreview) {
-    const p = outcomeVal.trim();
-    outcomePreview.textContent = p ? (p.length>12 ? p.slice(0,10)+"…" : p) : "";
-  }
-}
 
-function hideEditor() { editor.style.display = "none"; }
-
-/* ── Tooltip ── */
-const tooltip = document.getElementById("tooltip");
-function showTooltip(n) {
-  if (activeId) return;
-  const bid = baseId(n.id);
-  tooltip.style.display    = "block";
-  tooltip.style.borderColor = COL[bid];
-  tooltip.innerHTML = `<strong style="color:${COL[bid]}">${n.short}</strong><br>${n.guidance}`;
-  const vbW = dualMode ? FULL_VB_W : W;
-  const wrap = document.getElementById("svg-wrap");
-  const ww   = wrap.offsetWidth;
-  const hh   = wrap.offsetHeight;
-  const scale = Math.min(ww / vbW, hh / H);
-  const contentW = vbW * scale;
-  const xOffset = (ww - contentW) / 2;
-  let left  = xOffset + (n.x * scale) + (n.lx || 0) - 90;
-  let top   = (n.y * scale) + (n.ly < 0 ? -90 : 20);
-  left = Math.max(0,Math.min(left,ww-190));
-  top  = Math.max(0,top);
-  tooltip.style.left = left+"px";
-  tooltip.style.top  = top+"px";
-}
-function hideTooltip() { tooltip.style.display = "none"; }
-
-/* ── Screen-reader announcer ── */
-const liveRegion = document.getElementById("live-region");
-function announce(msg) {
-  liveRegion.textContent = "";
-  setTimeout(()=>{ liveRegion.textContent = msg; }, 100);
-}
-
-const modalOverlay = document.getElementById("modal-overlay");
-const modalBox     = document.getElementById("modal-box");
-const modalTitle   = document.getElementById("modal-title");
-const modalBody    = document.getElementById("modal-body");
-let   modalOpener  = null;
-
-function showModal(title, body) {
-  modalTitle.textContent = title;
-  modalBody.textContent  = body;
-  modalOpener = document.activeElement;
-  modalOverlay.classList.add("open");
-  document.getElementById("modal-close").focus();
-  document.addEventListener("keydown", handleModalKey);
-}
-function closeModal() {
-  modalOverlay.classList.remove("open");
-  document.removeEventListener("keydown", handleModalKey);
-  if (modalOpener) modalOpener.focus();
-}
-function handleModalKey(e) {
-  if (e.key === "Escape") { closeModal(); return; }
-  if (e.key !== "Tab") return;
-  const focusable = [...modalBox.querySelectorAll(
-    'button, [tabindex="0"], textarea, input, a[href]'
-  )].filter(el => !el.disabled);
-  if (!focusable.length) return;
-  const first = focusable[0], last = focusable[focusable.length-1];
-  if (e.shiftKey && document.activeElement===first) { e.preventDefault(); last.focus(); }
-  else if (!e.shiftKey && document.activeElement===last) { e.preventDefault(); first.focus(); }
-}
-document.getElementById("modal-close").addEventListener("click", closeModal);
-modalOverlay.addEventListener("click", e => { if (e.target===modalOverlay) closeModal(); });
-
-/* ── Contradictions ── */
-const contradictions    = [];
-let   contraMode        = false;
-let   contraFirst       = null;
-let   contraPromptNodes = null;
-
-const contraBtn       = document.getElementById("contra-btn");
-const contraEditor    = document.getElementById("contra-editor");
-const contraLabel     = document.getElementById("contra-label");
-const contraTypeDesc  = document.getElementById("contra-type-desc");
-const contraInput     = document.getElementById("contra-input");
-const contraSaveBtn   = document.getElementById("contra-save-btn");
-const contraCancelBtn = document.getElementById("contra-cancel-btn");
-const hintEl          = document.getElementById("hint-text");
-
-function renderContradictions() {
-  while (contraLayer.firstChild) contraLayer.removeChild(contraLayer.firstChild);
-  const allNodes = [...NODES, ...NODES2];
-  for (const c of contradictions) {
-    if (c.type==="primary") {
-      const n = allNodes.find(x=>x.id===c.nodes[0]);
-      if (!n) continue;
-      el("circle",{cx:n.x, cy:n.y, r:R+7, fill:"none",
-        stroke:"#b45309","stroke-width":"2","stroke-dasharray":"3,2.5"}, contraLayer);
-    } else if (c.type==="secondary") {
-      const na=allNodes.find(x=>x.id===c.nodes[0]), nb=allNodes.find(x=>x.id===c.nodes[1]);
-      if (!na||!nb) continue;
-      const mx=(na.x+nb.x)/2, my=(na.y+nb.y)/2;
-      el("line",{x1:na.x,y1:na.y,x2:nb.x,y2:nb.y,
-        stroke:"#c0392b","stroke-width":"2","stroke-dasharray":"6,3",opacity:"0.8"}, contraLayer);
-      const t = el("text",{x:mx,y:my-7,"text-anchor":"middle","font-size":"13",fill:"#c0392b"}, contraLayer);
-      t.textContent = "⚡";
-    } else {
-      // intersystemic — purple long-dashed line + ↔ at midpoint
-      const na=allNodes.find(x=>x.id===c.nodes[0]), nb=allNodes.find(x=>x.id===c.nodes[1]);
-      if (!na||!nb) continue;
-      const mx=(na.x+nb.x)/2, my=(na.y+nb.y)/2;
-      el("line",{x1:na.x,y1:na.y,x2:nb.x,y2:nb.y,
-        stroke:"#7c3aed","stroke-width":"2","stroke-dasharray":"8,4",opacity:"0.75"}, contraLayer);
-      const t = el("text",{x:mx,y:my-8,"text-anchor":"middle","font-size":"14",fill:"#7c3aed"}, contraLayer);
-      t.textContent = "↔";
+  function handleContradictionNodeActivation(nodeId) {
+    if (state.contradictionPromptNodes !== null) {
+      return;
     }
-  }
-}
 
-function setContraMode(on) {
-  contraMode = on;
-  contraFirst = null;
-  contraPromptNodes = null;
-  contraEditor.style.display = "none";
-  contraBtn.classList.toggle("btn-contra-active", on);
-  contraBtn.setAttribute("aria-pressed", String(on));
-  const guide = document.getElementById("contra-guide");
-  if (on) {
-    hideEditor();
-    activeId = null;
-    hintEl.textContent = "Select nodes to mark contradictions — see guidance in the Summary panel.";
-    guide.style.display = "block";
-  } else {
-    hintEl.textContent = "Click a node to edit it. Hover for guidance.";
-    guide.style.display = "none";
-  }
-  document.getElementById("cg-intersys").style.display = (on && dualMode) ? "block" : "none";
-  for (const n of allActiveNodes()) updateNodeVisual(n.id);
-}
-contraBtn.addEventListener("click", () => setContraMode(!contraMode));
+    if (state.contradictionFirstNodeId === null) {
+      state.contradictionFirstNodeId = nodeId;
+      updateAllNodeVisuals();
 
-function handleContraNodeClick(id) {
-  if (contraPromptNodes!==null) return;
-  if (contraFirst===null) {
-    contraFirst = id;
-    for (const n of allActiveNodes()) updateNodeVisual(n.id);
-    const hint = dualMode
-      ? `${nodeDef(id).short} selected. Activate the same node again for a primary contradiction, another node in the same system for a secondary contradiction, or a node in the other system for an inter-systemic contradiction.`
-      : `${nodeDef(id).short} selected. Activate the same node again for a primary contradiction, or another node for a secondary contradiction.`;
-    announce(hint);
-  } else if (contraFirst===id) {
-    showContraPrompt("primary",[id]);
-  } else {
-    const crossSystem = dualMode && (contraFirst.endsWith("_2") !== id.endsWith("_2"));
-    if (crossSystem) {
-      showContraPrompt("intersystemic",[contraFirst,id]);
-    } else {
-      showContraPrompt("secondary",[contraFirst,id]);
+      const node = getNodeDefinition(nodeId);
+      const message = state.dualMode
+        ? `${node.short} selected. Activate the same node again for a primary contradiction, another node in the same system for a secondary contradiction, or a node in the other system for an inter-systemic contradiction.`
+        : `${node.short} selected. Activate the same node again for a primary contradiction, or another node for a secondary contradiction.`;
+
+      announce(message);
+      return;
     }
+
+    if (state.contradictionFirstNodeId === nodeId) {
+      showContradictionPrompt("primary", [nodeId]);
+      return;
+    }
+
+    const isCrossSystem =
+      state.dualMode &&
+      (state.contradictionFirstNodeId.endsWith("_2") !== nodeId.endsWith("_2"));
+
+    showContradictionPrompt(
+      isCrossSystem ? "intersystemic" : "secondary",
+      [state.contradictionFirstNodeId, nodeId]
+    );
   }
-}
 
-function showContraPrompt(type, nodes) {
-  contraPromptNodes = nodes;
-  contraEditor.style.display = "block";
-  if (type==="primary") {
-    const n = nodeDef(nodes[0]);
-    contraLabel.textContent    = `⚡ Primary Contradiction — ${n.short}`;
-    contraTypeDesc.textContent = "A tension within this single component. Describe what is pulling against itself.";
-  } else if (type==="secondary") {
-    const na=nodeDef(nodes[0]), nb=nodeDef(nodes[1]);
-    contraLabel.textContent    = `⚡ Secondary Contradiction — ${na.short} ↔ ${nb.short}`;
-    contraTypeDesc.textContent = "A tension between these two components. Describe how they pull in different directions.";
-  } else {
-    const na=nodeDef(nodes[0]), nb=nodeDef(nodes[1]);
-    const sysA = nodes[0].endsWith("_2") ? 2 : 1;
-    const sysB = nodes[1].endsWith("_2") ? 2 : 1;
-    contraLabel.textContent    = `↔ Inter-systemic Contradiction — ${na.short} (Sys ${sysA}) ↔ ${nb.short} (Sys ${sysB})`;
-    contraTypeDesc.textContent = "A tension between the two activity systems. Describe how their goals, rules, or tools conflict across the boundary.";
-  }
-  contraInput.value = "";
-  contraInput.focus();
-  contraSaveBtn.onclick = () => saveContradiction(type, nodes);
-}
-
-function saveContradiction(type, nodes) {
-  const desc = contraInput.value.trim();
-  contradictions.push({type, nodes, description:desc});
-  renderContradictions();
-  const na  = nodeDef(nodes[0]);
-  const msg = type==="primary"
-    ? `Primary contradiction saved for ${na.short}.`
-    : `Secondary contradiction saved between ${na.short} and ${nodeDef(nodes[1]).short}.`;
-  announce(msg);
-  cancelContraPrompt();
-  updateSummary();
-}
-
-function cancelContraPrompt() {
-  contraPromptNodes = null;
-  contraFirst = null;
-  contraEditor.style.display = "none";
-  for (const n of allActiveNodes()) updateNodeVisual(n.id);
-}
-contraCancelBtn.addEventListener("click", cancelContraPrompt);
-
-/* ── Live summary ── */
-const summaryBody    = document.getElementById("summary-body");
-const summaryHeading = document.getElementById("summary-heading");
-
-function renderSummarySection(nodes, store, title) {
-  if (title) {
-    const hdr = document.createElement("div");
-    hdr.className = "sr-sys-heading";
-    hdr.textContent = title;
-    summaryBody.appendChild(hdr);
-  }
-  for (const n of nodes) {
+  function createSummaryRow(label, value) {
     const row = document.createElement("div");
     row.className = "sr-row";
-    const lbl = document.createElement("div");
-    lbl.className   = "sr-label";
-    lbl.textContent = n.short;
-    const val = document.createElement("div");
-    if (store[n.id].trim()) {
-      val.className   = "sr-value";
-      val.textContent = store[n.id];
+
+    const labelElement = document.createElement("div");
+    labelElement.className = "sr-label";
+    labelElement.textContent = label;
+
+    const valueElement = document.createElement("div");
+    if (value.trim()) {
+      valueElement.className = "sr-value";
+      valueElement.textContent = value;
     } else {
-      val.className   = "sr-empty";
-      val.textContent = "—";
+      valueElement.className = "sr-empty";
+      valueElement.textContent = "—";
     }
-    row.appendChild(lbl);
-    row.appendChild(val);
-    summaryBody.appendChild(row);
-  }
-}
 
-function addHr() {
-  const hr = document.createElement("hr");
-  hr.className = "sr-divider";
-  hr.setAttribute("aria-hidden","true");
-  summaryBody.appendChild(hr);
-}
-
-function updateSummary() {
-  summaryBody.innerHTML = "";
-  if (dualMode) {
-    renderSummarySection(NODES, vals,  "System 1");
-    addHr();
-    renderSummarySection(NODES, vals2, "System 2");
-    addHr();
-    // Shared elements
-    const shHdr = document.createElement("div");
-    shHdr.className = "sr-sys-heading";
-    shHdr.textContent = "Shared elements";
-    summaryBody.appendChild(shHdr);
-    for (const [label, value] of [["Shared Object", sharedObject],["Shared Outcome(s)", sharedOutcome]]) {
-      const row = document.createElement("div"); row.className = "sr-row";
-      const lbl = document.createElement("div"); lbl.className = "sr-label"; lbl.textContent = label;
-      const val = document.createElement("div");
-      if (value.trim()) { val.className = "sr-value"; val.textContent = value; }
-      else               { val.className = "sr-empty"; val.textContent = "—"; }
-      row.appendChild(lbl); row.appendChild(val);
-      summaryBody.appendChild(row);
-    }
-  } else {
-    renderSummarySection(NODES, vals, null);
-    // Outcome row
-    addHr();
-    const outRow = document.createElement("div"); outRow.className = "sr-row";
-    const outLbl = document.createElement("div"); outLbl.className = "sr-label"; outLbl.textContent = "Outcome";
-    const outVal = document.createElement("div");
-    if (outcomeVal.trim()) { outVal.className = "sr-value"; outVal.textContent = outcomeVal; }
-    else                   { outVal.className = "sr-empty"; outVal.textContent = "—"; }
-    outRow.appendChild(outLbl); outRow.appendChild(outVal);
-    summaryBody.appendChild(outRow);
+    row.append(labelElement, valueElement);
+    return row;
   }
-  // Contradictions (all systems)
-  if (contradictions.length) {
-    addHr();
+
+  function createSummaryDivider() {
+    const divider = document.createElement("hr");
+    divider.className = "sr-divider";
+    divider.setAttribute("aria-hidden", "true");
+    return divider;
+  }
+
+  function createSummaryHeading(text) {
     const heading = document.createElement("div");
-    heading.className   = "sr-label";
-    heading.textContent = "Contradictions";
-    summaryBody.appendChild(heading);
-    const allNodes = [...NODES, ...NODES2];
-    for (const c of contradictions) {
-      const na = allNodes.find(x=>x.id===c.nodes[0]);
-      if (!na) continue;
-      const div = document.createElement("div");
-      if (c.type==="primary") {
-        div.className   = "sr-contra";
-        div.textContent = `⚡ Primary — ${na.short}${c.description ? ": "+c.description : ""}`;
-      } else if (c.type==="secondary") {
-        const nb = allNodes.find(x=>x.id===c.nodes[1]);
-        div.className   = "sr-contra";
-        div.textContent = `⚡ Secondary — ${na.short} ↔ ${nb?nb.short:"?"}${c.description ? ": "+c.description : ""}`;
-      } else {
-        const nb   = allNodes.find(x=>x.id===c.nodes[1]);
-        const sysA = c.nodes[0].endsWith("_2") ? 2 : 1;
-        const sysB = c.nodes[1].endsWith("_2") ? 2 : 1;
-        div.className   = "sr-contra-inter";
-        div.textContent = `↔ Inter-systemic — ${na.short} (Sys ${sysA}) ↔ ${nb?nb.short:"?"} (Sys ${sysB})${c.description ? ": "+c.description : ""}`;
-      }
-      summaryBody.appendChild(div);
-    }
+    heading.className = "sr-sys-heading";
+    heading.textContent = text;
+    return heading;
   }
-}
 
-/* ── Copy summary ── */
-const copyBtn = document.getElementById("copy-btn");
-copyBtn.addEventListener("click", () => {
-  navigator.clipboard.writeText(exportText()).then(() => {
-    copyBtn.textContent = "Copied!";
-    announce("Summary copied to clipboard.");
-    setTimeout(()=>{ copyBtn.textContent = "Copy summary and notes"; }, 1800);
-  });
-});
+  function renderSummarySection(fragment, nodes, store, title = null) {
+    if (title) {
+      fragment.appendChild(createSummaryHeading(title));
+    }
 
-/* ── Export menu ── */
-const exportInterfaceBtn = document.getElementById("export-interface-btn");
-const exportBtn  = document.getElementById("export-btn");
-const exportMenu = document.getElementById("export-menu");
+    nodes.forEach((node) => {
+      fragment.appendChild(createSummaryRow(node.short, store[node.id]));
+    });
+  }
 
-function setExportOpen(open) {
-  exportBtn.setAttribute("aria-expanded", String(open));
-  exportMenu.style.display = open ? "block" : "none";
-  if (open) exportMenu.querySelector("button").focus();
-}
-exportBtn.addEventListener("click", e => {
-  e.stopPropagation();
-  setExportOpen(exportBtn.getAttribute("aria-expanded")==="false");
-});
-exportMenu.addEventListener("keydown", e => {
-  const items = [...exportMenu.querySelectorAll("button")];
-  const idx   = items.indexOf(document.activeElement);
-  if (e.key==="Escape")    { setExportOpen(false); exportBtn.focus(); }
-  if (e.key==="ArrowDown") { e.preventDefault(); items[(idx+1)%items.length].focus(); }
-  if (e.key==="ArrowUp")   { e.preventDefault(); items[(idx-1+items.length)%items.length].focus(); }
-});
-document.addEventListener("click",   ()  => setExportOpen(false));
-document.addEventListener("keydown", e   => { if(e.key==="Escape") setExportOpen(false); });
+  function updateSummary() {
+    const fragment = document.createDocumentFragment();
 
-/* ── Export data ── */
-function buildExportData() {
-  const notes = document.getElementById("notes-input").value.trim();
-  function fmtContra(c) {
-    return {
-      type: c.type,
-      nodes: c.nodes.map(id => {
-        const b = baseId(id), sys = id.endsWith("_2") ? 2 : 1;
-        const short = NODES.find(n=>n.id===b)?.short || b;
-        return dualMode ? `${short} (System ${sys})` : short;
+    if (state.dualMode) {
+      renderSummarySection(fragment, NODE_DEFINITIONS, state.valuesBySystem[1], "System 1");
+      fragment.appendChild(createSummaryDivider());
+      renderSummarySection(fragment, NODE_DEFINITIONS, state.valuesBySystem[2], "System 2");
+      fragment.appendChild(createSummaryDivider());
+      fragment.appendChild(createSummaryHeading("Shared elements"));
+      fragment.appendChild(createSummaryRow("Shared Object", state.sharedObject));
+      fragment.appendChild(createSummaryRow("Shared Outcome(s)", state.sharedOutcome));
+    } else {
+      renderSummarySection(fragment, NODE_DEFINITIONS, state.valuesBySystem[1]);
+      fragment.appendChild(createSummaryDivider());
+      fragment.appendChild(createSummaryRow("Outcome", state.outcome));
+    }
+
+    if (state.contradictions.length) {
+      const contradictionHeading = document.createElement("div");
+      contradictionHeading.className = "sr-label";
+      contradictionHeading.textContent = "Contradictions";
+      fragment.append(createSummaryDivider(), contradictionHeading);
+
+      state.contradictions.forEach((contradiction) => {
+        const firstNode = ALL_NODE_MAP.get(contradiction.nodes[0]);
+        if (!firstNode) {
+          return;
+        }
+
+        const contradictionElement = document.createElement("div");
+
+        if (contradiction.type === "primary") {
+          contradictionElement.className = "sr-contra";
+          contradictionElement.textContent = `⚡ Primary — ${firstNode.short}${contradiction.description ? `: ${contradiction.description}` : ""}`;
+        } else if (contradiction.type === "secondary") {
+          const secondNode = ALL_NODE_MAP.get(contradiction.nodes[1]);
+          contradictionElement.className = "sr-contra";
+          contradictionElement.textContent = `⚡ Secondary — ${firstNode.short} ↔ ${secondNode ? secondNode.short : "?"}${contradiction.description ? `: ${contradiction.description}` : ""}`;
+        } else {
+          const secondNode = ALL_NODE_MAP.get(contradiction.nodes[1]);
+          const firstSystem = contradiction.nodes[0].endsWith("_2") ? 2 : 1;
+          const secondSystem = contradiction.nodes[1].endsWith("_2") ? 2 : 1;
+          contradictionElement.className = "sr-contra-inter";
+          contradictionElement.textContent = `↔ Inter-systemic — ${firstNode.short} (Sys ${firstSystem}) ↔ ${secondNode ? secondNode.short : "?"} (Sys ${secondSystem})${contradiction.description ? `: ${contradiction.description}` : ""}`;
+        }
+
+        fragment.appendChild(contradictionElement);
+      });
+    }
+
+    dom.summaryBody.replaceChildren(fragment);
+  }
+
+  function buildExportData() {
+    const notes = dom.notesInput.value.trim();
+
+    const formatContradiction = (contradiction) => ({
+      type: contradiction.type,
+      nodes: contradiction.nodes.map((nodeId) => {
+        const baseNodeId = getBaseNodeId(nodeId);
+        const shortLabel = NODE_MAP.get(baseNodeId)?.short || baseNodeId;
+        return state.dualMode
+          ? `${shortLabel} (System ${nodeId.endsWith("_2") ? 2 : 1})`
+          : shortLabel;
       }),
-      description: c.description,
-    };
-  }
-  if (!dualMode) {
+      description: contradiction.description
+    });
+
+    if (!state.dualMode) {
+      return {
+        nodes: NODE_DEFINITIONS.map((node) => ({
+          id: node.id,
+          label: node.label,
+          value: state.valuesBySystem[1][node.id]
+        })),
+        outcome: state.outcome,
+        contradictions: state.contradictions.map(formatContradiction),
+        notes
+      };
+    }
+
     return {
-      nodes: NODES.map(n=>({id:n.id, label:n.label, value:vals[n.id]})),
-      outcome: outcomeVal,
-      contradictions: contradictions.map(fmtContra),
-      notes,
+      system1: {
+        nodes: NODE_DEFINITIONS.map((node) => ({
+          id: node.id,
+          label: node.label,
+          value: state.valuesBySystem[1][node.id]
+        })),
+        contradictions: state.contradictions
+          .filter((contradiction) => contradiction.type !== "intersystemic" && !contradiction.nodes[0].endsWith("_2"))
+          .map(formatContradiction)
+      },
+      system2: {
+        nodes: NODE_DEFINITIONS.map((node) => ({
+          id: node.id,
+          label: node.label,
+          value: state.valuesBySystem[2][node.id]
+        })),
+        contradictions: state.contradictions
+          .filter((contradiction) => contradiction.type !== "intersystemic" && contradiction.nodes[0].endsWith("_2"))
+          .map(formatContradiction)
+      },
+      intersystemicContradictions: state.contradictions
+        .filter((contradiction) => contradiction.type === "intersystemic")
+        .map(formatContradiction),
+      sharedObject: state.sharedObject,
+      sharedOutcome: state.sharedOutcome,
+      notes
     };
   }
-  return {
-    system1: {
-      nodes: NODES.map(n=>({id:n.id, label:n.label, value:vals[n.id]})),
-      contradictions: contradictions
-        .filter(c => c.type !== "intersystemic" && !c.nodes[0].endsWith("_2"))
-        .map(fmtContra),
-    },
-    system2: {
-      nodes: NODES.map(n=>({id:n.id, label:n.label, value:vals2[n.id]})),
-      contradictions: contradictions
-        .filter(c => c.type !== "intersystemic" && c.nodes[0].endsWith("_2"))
-        .map(fmtContra),
-    },
-    intersystemicContradictions: contradictions
-      .filter(c => c.type === "intersystemic")
-      .map(fmtContra),
-    sharedObject,
-    sharedOutcome,
-    notes,
-  };
-}
 
-function contraTag(type) {
-  if (type==="primary")      return "Primary contradiction";
-  if (type==="secondary")    return "Secondary contradiction";
-  return "Inter-systemic contradiction";
-}
-
-function exportContras(contras) {
-  const lines = [];
-  if (contras.length) {
-    lines.push("Contradictions","-".repeat(14));
-    for (const c of contras) {
-      const tag = contraTag(c.type);
-      const who = c.nodes.length===1?c.nodes[0]:`${c.nodes[0]} ↔ ${c.nodes[1]}`;
-      lines.push(`[${tag}] ${who}${c.description?"\n"+c.description:""}\n`);
+  function getContradictionTag(type) {
+    if (type === "primary") {
+      return "Primary contradiction";
     }
+    if (type === "secondary") {
+      return "Secondary contradiction";
+    }
+    return "Inter-systemic contradiction";
   }
-  return lines;
-}
 
-function exportText() {
-  const d = buildExportData();
-  const lines = ["Engeström Activity System Analysis","=".repeat(36),""];
-  if (dualMode) {
-    lines.push("System 1","-".repeat(8),"");
-    for (const n of d.system1.nodes) lines.push(`${n.label}:\n${n.value||"(empty)"}\n`);
-    lines.push(...exportContras(d.system1.contradictions));
-    lines.push("","System 2","-".repeat(8),"");
-    for (const n of d.system2.nodes) lines.push(`${n.label}:\n${n.value||"(empty)"}\n`);
-    lines.push(...exportContras(d.system2.contradictions));
-    if (d.intersystemicContradictions.length) {
-      lines.push("","Inter-systemic Contradictions","-".repeat(29));
-      for (const c of d.intersystemicContradictions) {
-        const who = `${c.nodes[0]} ↔ ${c.nodes[1]}`;
-        lines.push(`[Inter-systemic contradiction] ${who}${c.description?"\n"+c.description:""}\n`);
+  function exportContradictionsAsText(contradictions) {
+    if (!contradictions.length) {
+      return [];
+    }
+
+    const lines = ["Contradictions", "-".repeat(14)];
+    contradictions.forEach((contradiction) => {
+      const subject = contradiction.nodes.length === 1
+        ? contradiction.nodes[0]
+        : `${contradiction.nodes[0]} ↔ ${contradiction.nodes[1]}`;
+      lines.push(`[${getContradictionTag(contradiction.type)}] ${subject}${contradiction.description ? `\n${contradiction.description}` : ""}\n`);
+    });
+    return lines;
+  }
+
+  function exportText() {
+    const exportData = buildExportData();
+    const lines = ["Engeström Activity System Analysis", "=".repeat(36), ""];
+
+    if (state.dualMode) {
+      lines.push("System 1", "-".repeat(8), "");
+      exportData.system1.nodes.forEach((node) => {
+        lines.push(`${node.label}:\n${node.value || "(empty)"}\n`);
+      });
+      lines.push(...exportContradictionsAsText(exportData.system1.contradictions));
+      lines.push("", "System 2", "-".repeat(8), "");
+      exportData.system2.nodes.forEach((node) => {
+        lines.push(`${node.label}:\n${node.value || "(empty)"}\n`);
+      });
+      lines.push(...exportContradictionsAsText(exportData.system2.contradictions));
+
+      if (exportData.intersystemicContradictions.length) {
+        lines.push("", "Inter-systemic Contradictions", "-".repeat(29));
+        exportData.intersystemicContradictions.forEach((contradiction) => {
+          const subject = `${contradiction.nodes[0]} ↔ ${contradiction.nodes[1]}`;
+          lines.push(`[Inter-systemic contradiction] ${subject}${contradiction.description ? `\n${contradiction.description}` : ""}\n`);
+        });
+      }
+
+      lines.push("", "Shared elements", "-".repeat(15), "");
+      lines.push(`Shared Object:\n${exportData.sharedObject || "(empty)"}\n`);
+      lines.push(`Shared Outcome(s):\n${exportData.sharedOutcome || "(empty)"}\n`);
+    } else {
+      exportData.nodes.forEach((node) => {
+        lines.push(`${node.label}:\n${node.value || "(empty)"}\n`);
+      });
+      lines.push(`Outcome:\n${exportData.outcome || "(empty)"}\n`);
+      lines.push(...exportContradictionsAsText(exportData.contradictions));
+    }
+
+    if (exportData.notes) {
+      lines.push("Notes", "-".repeat(14), exportData.notes);
+    }
+
+    return lines.join("\n");
+  }
+
+  function exportContradictionsAsMarkdown(contradictions) {
+    if (!contradictions.length) {
+      return [];
+    }
+
+    const lines = ["", "### Contradictions", ""];
+    contradictions.forEach((contradiction) => {
+      const subject = contradiction.nodes.length === 1
+        ? contradiction.nodes[0]
+        : `${contradiction.nodes[0]} ↔ ${contradiction.nodes[1]}`;
+      lines.push(`- **${getContradictionTag(contradiction.type)} — ${subject}**${contradiction.description ? `: ${contradiction.description}` : ""}`);
+    });
+    return lines;
+  }
+
+  function exportMarkdown() {
+    const exportData = buildExportData();
+    const lines = ["# Engeström Activity System Analysis", ""];
+
+    if (state.dualMode) {
+      lines.push("## System 1", "", "| Component | Content |", "|-----------|---------|");
+      exportData.system1.nodes.forEach((node) => {
+        lines.push(`| **${node.label}** | ${node.value || "—"} |`);
+      });
+      lines.push(...exportContradictionsAsMarkdown(exportData.system1.contradictions));
+
+      lines.push("", "## System 2", "", "| Component | Content |", "|-----------|---------|");
+      exportData.system2.nodes.forEach((node) => {
+        lines.push(`| **${node.label}** | ${node.value || "—"} |`);
+      });
+      lines.push(...exportContradictionsAsMarkdown(exportData.system2.contradictions));
+
+      if (exportData.intersystemicContradictions.length) {
+        lines.push("", "## Inter-systemic Contradictions", "");
+        exportData.intersystemicContradictions.forEach((contradiction) => {
+          const subject = `${contradiction.nodes[0]} ↔ ${contradiction.nodes[1]}`;
+          lines.push(`- **Inter-systemic contradiction — ${subject}**${contradiction.description ? `: ${contradiction.description}` : ""}`);
+        });
+      }
+
+      lines.push("", "## Shared Elements", "");
+      lines.push(`| **Shared Object** | ${exportData.sharedObject || "—"} |`);
+      lines.push(`| **Shared Outcome(s)** | ${exportData.sharedOutcome || "—"} |`);
+    } else {
+      lines.push("| Component | Content |", "|-----------|---------|");
+      exportData.nodes.forEach((node) => {
+        lines.push(`| **${node.label}** | ${node.value || "—"} |`);
+      });
+      lines.push(`| **Outcome** | ${exportData.outcome || "—"} |`);
+
+      if (exportData.contradictions.length) {
+        lines.push("", "## Contradictions", "");
+        exportData.contradictions.forEach((contradiction) => {
+          const subject = contradiction.nodes.length === 1
+            ? contradiction.nodes[0]
+            : `${contradiction.nodes[0]} ↔ ${contradiction.nodes[1]}`;
+          const contradictionLabel = contradiction.type === "primary"
+            ? "Primary contradiction"
+            : "Secondary contradiction";
+          lines.push(`- **${contradictionLabel} — ${subject}**${contradiction.description ? `: ${contradiction.description}` : ""}`);
+        });
       }
     }
-    lines.push("","Shared elements","-".repeat(15),"");
-    lines.push(`Shared Object:\n${d.sharedObject||"(empty)"}\n`);
-    lines.push(`Shared Outcome(s):\n${d.sharedOutcome||"(empty)"}\n`);
-  } else {
-    for (const n of d.nodes) lines.push(`${n.label}:\n${n.value||"(empty)"}\n`);
-    lines.push(`Outcome:\n${d.outcome||"(empty)"}\n`);
-    lines.push(...exportContras(d.contradictions));
-  }
-  if (d.notes) lines.push("Notes","-".repeat(14),d.notes);
-  return lines.join("\n");
-}
 
-function exportMarkdownContras(contras) {
-  const lines = [];
-  if (contras.length) {
-    lines.push("","### Contradictions","");
-    for (const c of contras) {
-      const tag = contraTag(c.type);
-      const who = c.nodes.length===1?c.nodes[0]:`${c.nodes[0]} ↔ ${c.nodes[1]}`;
-      lines.push(`- **${tag} — ${who}**${c.description?": "+c.description:""}`);
+    if (exportData.notes) {
+      lines.push("", "## Notes", "", exportData.notes);
     }
-  }
-  return lines;
-}
 
-function exportMarkdown() {
-  const d = buildExportData();
-  const lines = ["# Engeström Activity System Analysis",""];
-  if (dualMode) {
-    lines.push("## System 1","","| Component | Content |","|-----------|---------|");
-    for (const n of d.system1.nodes) lines.push(`| **${n.label}** | ${n.value||"—"} |`);
-    lines.push(...exportMarkdownContras(d.system1.contradictions));
-    lines.push("","## System 2","","| Component | Content |","|-----------|---------|");
-    for (const n of d.system2.nodes) lines.push(`| **${n.label}** | ${n.value||"—"} |`);
-    lines.push(...exportMarkdownContras(d.system2.contradictions));
-    if (d.intersystemicContradictions.length) {
-      lines.push("","## Inter-systemic Contradictions","");
-      for (const c of d.intersystemicContradictions) {
-        const who = `${c.nodes[0]} ↔ ${c.nodes[1]}`;
-        lines.push(`- **Inter-systemic contradiction — ${who}**${c.description?": "+c.description:""}`);
+    return lines.join("\n");
+  }
+
+  function exportJson() {
+    return JSON.stringify(buildExportData(), null, 2);
+  }
+
+  function exportInterfaceMarkdown() {
+    const lines = [
+      "# Activity System Analyser — Interface Content",
+      "",
+      "> This file contains all static text used in the interface: node definitions, guidance, prompts, and contradiction descriptions.",
+      "",
+      "---",
+      "",
+      "## Node definitions",
+      ""
+    ];
+
+    NODE_DEFINITIONS.forEach((node) => {
+      lines.push(`### ${node.label}`, "");
+      lines.push(`**Guidance:** ${node.guidance}`, "");
+      lines.push(`**Prompt:** *${node.prompt}*`, "");
+    });
+
+    lines.push(
+      "---",
+      "",
+      "## Outcome (single-system mode)",
+      "",
+      "**Guidance:** What the activity is directed at and works to transform — what the activity produces or changes.",
+      "",
+      "**Prompt:** *What does the activity produce? What change or result occurs through the transformation of the object?*",
+      "",
+      "---",
+      "",
+      "## Shared elements (dual-system mode)",
+      "",
+      "### Shared Object",
+      "",
+      "**Guidance:** What do both activity systems share as their common object or goal?",
+      "",
+      "**Prompt:** *What is the shared object or goal connecting both systems?*",
+      "",
+      "### Shared Outcome(s)",
+      "",
+      "**Guidance:** What is the shared outcome produced by both activity systems working together?",
+      "",
+      "**Prompt:** *What outcome do both systems jointly produce?*",
+      "",
+      "---",
+      "",
+      "## Contradiction types",
+      "",
+      "### ⚡ Primary contradiction",
+      "",
+      "A tension **within a single component**.",
+      "",
+      "*Example: the Tools node — staff must use a digital platform they find unusable.*",
+      "",
+      "### ⚡ Secondary contradiction",
+      "",
+      "A tension **between two components** of the same activity system.",
+      "",
+      "*Example: Rules demand standardised assessment, but the Object is personalised learning.*",
+      "",
+      "### ↔ Inter-systemic contradiction *(dual-system mode only)*",
+      "",
+      "A tension **between the two activity systems**.",
+      "",
+      "*Example: System 1's rules clash with System 2's division of labour.*",
+      "",
+      "### Note on tertiary contradictions",
+      "",
+      "Engeström (1987) also identifies **tertiary contradictions** — tensions between the dominant form of an activity and a culturally more advanced form of it — which are not modelled in this tool.",
+      ""
+    );
+
+    return lines.join("\n");
+  }
+
+  function downloadFile(content, filename, mimeType) {
+    const blob = new Blob([content], { type: mimeType });
+    const objectUrl = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = objectUrl;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.setTimeout(() => URL.revokeObjectURL(objectUrl), 0);
+  }
+
+  async function copyToClipboard(text) {
+    if (navigator.clipboard && typeof navigator.clipboard.writeText === "function") {
+      await navigator.clipboard.writeText(text);
+      return;
+    }
+
+    const temporaryTextarea = document.createElement("textarea");
+    temporaryTextarea.value = text;
+    temporaryTextarea.setAttribute("readonly", "");
+    temporaryTextarea.style.position = "fixed";
+    temporaryTextarea.style.opacity = "0";
+    document.body.appendChild(temporaryTextarea);
+    temporaryTextarea.select();
+    document.execCommand("copy");
+    temporaryTextarea.remove();
+  }
+
+  function getExportMenuItems() {
+    return Array.from(dom.exportMenu.querySelectorAll("[role='menuitem']"));
+  }
+
+  function setExportMenuOpen(isOpen, options = {}) {
+    const { focusFirstItem = false, restoreFocus = false } = options;
+    dom.exportButton.setAttribute("aria-expanded", String(isOpen));
+    dom.exportMenu.hidden = !isOpen;
+
+    if (isOpen && focusFirstItem) {
+      const [firstItem] = getExportMenuItems();
+      if (firstItem) {
+        firstItem.focus();
       }
     }
-    lines.push("","## Shared Elements","");
-    lines.push(`| **Shared Object** | ${d.sharedObject||"—"} |`);
-    lines.push(`| **Shared Outcome(s)** | ${d.sharedOutcome||"—"} |`);
-  } else {
-    lines.push("| Component | Content |","|-----------|---------|");
-    for (const n of d.nodes) lines.push(`| **${n.label}** | ${n.value||"—"} |`);
-    lines.push(`| **Outcome** | ${d.outcome||"—"} |`);
-    if (d.contradictions.length) {
-      lines.push("","## Contradictions","");
-      for (const c of d.contradictions) {
-        const tag = c.type==="primary"?"Primary contradiction":"Secondary contradiction";
-        const who = c.nodes.length===1?c.nodes[0]:`${c.nodes[0]} ↔ ${c.nodes[1]}`;
-        lines.push(`- **${tag} — ${who}**${c.description?": "+c.description:""}`);
-      }
+
+    if (!isOpen && restoreFocus) {
+      dom.exportButton.focus();
     }
   }
-  if (d.notes) lines.push("","## Notes","",d.notes);
-  return lines.join("\n");
-}
 
-function exportJSON() { return JSON.stringify(buildExportData(),null,2); }
-
-function exportInterfaceMarkdown() {
-  const lines = [
-    "# Activity System Analyser — Interface Content",
-    "",
-    "> This file contains all static text used in the interface: node definitions, guidance, prompts, and contradiction descriptions.",
-    "",
-    "---",
-    "",
-    "## Node definitions",
-    "",
-  ];
-  for (const n of NODES) {
-    lines.push(`### ${n.label}`, "");
-    lines.push(`**Guidance:** ${n.guidance}`, "");
-    lines.push(`**Prompt:** *${n.prompt}*`, "");
+  function getFocusableElements(container) {
+    return Array.from(
+      container.querySelectorAll("button, a[href], textarea, input, select, [tabindex]:not([tabindex='-1'])")
+    ).filter((element) => !element.disabled && !element.hidden);
   }
-  lines.push(
-    "---", "",
-    "## Outcome (single-system mode)", "",
-    "**Guidance:** What the activity is directed at and works to transform — what the activity produces or changes.", "",
-    "**Prompt:** *What does the activity produce? What change or result occurs through the transformation of the object?*", "",
-    "---", "",
-    "## Shared elements (dual-system mode)", "",
-    "### Shared Object", "",
-    "**Guidance:** What do both activity systems share as their common object or goal?", "",
-    "**Prompt:** *What is the shared object or goal connecting both systems?*", "",
-    "### Shared Outcome(s)", "",
-    "**Guidance:** What is the shared outcome produced by both activity systems working together?", "",
-    "**Prompt:** *What outcome do both systems jointly produce?*", "",
-    "---", "",
-    "## Contradiction types", "",
-    "### ⚡ Primary contradiction", "",
-    "A tension **within a single component**.", "",
-    "*Example: the Tools node — staff must use a digital platform they find unusable.*", "",
-    "### ⚡ Secondary contradiction", "",
-    "A tension **between two components** of the same activity system.", "",
-    "*Example: Rules demand standardised assessment, but the Object is personalised learning.*", "",
-    "### ↔ Inter-systemic contradiction *(dual-system mode only)*", "",
-    "A tension **between the two activity systems**.", "",
-    "*Example: System 1's rules clash with System 2's division of labour.*", "",
-    "### Note on tertiary contradictions", "",
-    "Engeström (1987) also identifies **tertiary contradictions** — tensions between the dominant form of an activity and a culturally more advanced form of it — which are not modelled in this tool.",
-    ""
-  );
-  return lines.join("\n");
-}
-function download(content,filename,mime) {
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(new Blob([content],{type:mime}));
-  a.download = filename; a.click(); URL.revokeObjectURL(a.href);
-}
-exportInterfaceBtn.addEventListener("click", () => {
-  download(exportInterfaceMarkdown(), "export-interface-raw-content.md", "text/markdown");
-});
-exportMenu.addEventListener("click", e => {
-  const fmt = e.target.dataset.fmt;
-  if (!fmt) return;
-  if (fmt==="text")      download(exportText(),             "activity-system.txt",      "text/plain");
-  if (fmt==="markdown")  download(exportMarkdown(),         "activity-system.md",       "text/markdown");
-  if (fmt==="json")      download(exportJSON(),             "activity-system.json",     "application/json");
-  setExportOpen(false);
-  exportBtn.focus();
-});
 
-/* ── Dual mode toggle ── */
-const dualBtn = document.getElementById("dual-btn");
-dualBtn.addEventListener("click", () => {
-  dualMode = !dualMode;
-  activeId = null;
-  activeSystem = 1;
-  // Reset contra state directly (buildSVG refreshes visuals)
-  contraMode = false;
-  contraFirst = null;
-  contraPromptNodes = null;
-  contraEditor.style.display = "none";
-  contraBtn.classList.remove("btn-contra-active");
-  contraBtn.setAttribute("aria-pressed", "false");
-  document.getElementById("contra-guide").style.display = "none";
-  hintEl.textContent = "Click a node to edit it. Hover for guidance.";
-  hideEditor();
-  dualBtn.setAttribute("aria-pressed", String(dualMode));
-  dualBtn.textContent = dualMode ? "Show one system" : "Show two systems";
-  document.getElementById("app").classList.toggle("dual-active", dualMode);
-  summaryHeading.textContent = dualMode ? "Summary — Two Systems" : "Summary";
-  buildSVG();
-  updateSummary();
-  announce(dualMode ? "Two-system view enabled." : "Single-system view enabled.");
-});
+  function trapFocus(event, container) {
+    if (event.key !== "Tab") {
+      return;
+    }
 
-/* ── Legal modal ── */
-const legalOverlay = document.getElementById("legal-overlay");
-const legalBox     = document.getElementById("legal-box");
-const legalClose   = document.getElementById("legal-close");
-let   legalOpener  = null;
+    const focusableElements = getFocusableElements(container);
+    if (!focusableElements.length) {
+      return;
+    }
 
-document.getElementById("legal-btn").addEventListener("click", () => {
-  legalOpener = document.activeElement;
-  legalOverlay.classList.add("open");
-  legalClose.focus();
-  document.addEventListener("keydown", handleLegalKey);
-});
-function closeLegal() {
-  legalOverlay.classList.remove("open");
-  document.removeEventListener("keydown", handleLegalKey);
-  if (legalOpener) legalOpener.focus();
-}
-function handleLegalKey(e) {
-  if (e.key === "Escape") { closeLegal(); return; }
-  if (e.key !== "Tab") return;
-  const focusable = [...legalBox.querySelectorAll('button, a[href], [tabindex="0"]')].filter(el => !el.disabled);
-  if (!focusable.length) return;
-  const first = focusable[0], last = focusable[focusable.length-1];
-  if (e.shiftKey && document.activeElement===first)      { e.preventDefault(); last.focus(); }
-  else if (!e.shiftKey && document.activeElement===last) { e.preventDefault(); first.focus(); }
-}
-legalClose.addEventListener("click", closeLegal);
-legalOverlay.addEventListener("click", e => { if (e.target===legalOverlay) closeLegal(); });
+    const firstElement = focusableElements[0];
+    const lastElement = focusableElements[focusableElements.length - 1];
 
-/* ── Init ── */
-buildSVG();
-updateSummary();
+    if (event.shiftKey && document.activeElement === firstElement) {
+      event.preventDefault();
+      lastElement.focus();
+    } else if (!event.shiftKey && document.activeElement === lastElement) {
+      event.preventDefault();
+      firstElement.focus();
+    }
+  }
+
+  function openLegalDialog() {
+    state.legalDialogOpener = document.activeElement;
+    dom.legalOverlay.hidden = false;
+    dom.legalCloseButton.focus();
+    document.addEventListener("keydown", handleLegalDialogKeydown);
+  }
+
+  function closeLegalDialog() {
+    dom.legalOverlay.hidden = true;
+    document.removeEventListener("keydown", handleLegalDialogKeydown);
+
+    if (state.legalDialogOpener instanceof HTMLElement) {
+      state.legalDialogOpener.focus();
+    }
+  }
+
+  function handleLegalDialogKeydown(event) {
+    if (event.key === "Escape") {
+      closeLegalDialog();
+      return;
+    }
+
+    trapFocus(event, dom.legalBox);
+  }
+
+  function resetContradictionState() {
+    state.contradictionMode = false;
+    state.contradictionFirstNodeId = null;
+    state.contradictionPromptNodes = null;
+    dom.contradictionEditor.hidden = true;
+    dom.contradictionButton.classList.remove("btn-contra-active");
+    dom.contradictionButton.setAttribute("aria-pressed", "false");
+    dom.contradictionGuide.hidden = true;
+    dom.intersystemGuideRow.hidden = true;
+  }
+
+  function toggleDualMode() {
+    state.dualMode = !state.dualMode;
+    state.activeNodeId = null;
+    state.activeSystem = 1;
+    hideEditor();
+    hideTooltip();
+    resetContradictionState();
+    dom.hintText.textContent = "Click a node to edit it. Hover for guidance.";
+
+    dom.dualButton.setAttribute("aria-pressed", String(state.dualMode));
+    dom.dualButton.textContent = state.dualMode ? "Show one system" : "Show two systems";
+    dom.summaryHeading.textContent = state.dualMode ? "Summary — Two Systems" : "Summary";
+    dom.app.classList.toggle("dual-active", state.dualMode);
+
+    buildSvg();
+    updateSummary();
+    announce(state.dualMode ? "Two-system view enabled." : "Single-system view enabled.");
+  }
+
+  function bindEvents() {
+    dom.contradictionButton.addEventListener("click", () => {
+      setContradictionMode(!state.contradictionMode);
+    });
+
+    dom.contradictionCancelButton.addEventListener("click", cancelContradictionPrompt);
+    dom.dualButton.addEventListener("click", toggleDualMode);
+
+    dom.copyButton.addEventListener("click", async () => {
+      try {
+        await copyToClipboard(exportText());
+        dom.copyButton.textContent = "Copied!";
+        announce("Summary copied to clipboard.");
+        window.clearTimeout(state.copyResetTimerId);
+        state.copyResetTimerId = window.setTimeout(() => {
+          dom.copyButton.textContent = "Copy summary and notes";
+        }, 1800);
+      } catch (error) {
+        announce("Unable to copy summary and notes.");
+      }
+    });
+
+    dom.exportInterfaceButton.addEventListener("click", () => {
+      downloadFile(exportInterfaceMarkdown(), "export-interface-raw-content.md", "text/markdown");
+    });
+
+    dom.exportButton.addEventListener("click", (event) => {
+      event.stopPropagation();
+      const isExpanded = dom.exportButton.getAttribute("aria-expanded") === "true";
+      setExportMenuOpen(!isExpanded, { focusFirstItem: !isExpanded });
+    });
+
+    dom.exportMenu.addEventListener("click", (event) => {
+      const format = event.target.dataset.fmt;
+      if (!format) {
+        return;
+      }
+
+      if (format === "text") {
+        downloadFile(exportText(), "activity-system.txt", "text/plain");
+      } else if (format === "markdown") {
+        downloadFile(exportMarkdown(), "activity-system.md", "text/markdown");
+      } else if (format === "json") {
+        downloadFile(exportJson(), "activity-system.json", "application/json");
+      }
+
+      setExportMenuOpen(false, { restoreFocus: true });
+    });
+
+    dom.exportMenu.addEventListener("keydown", (event) => {
+      const items = getExportMenuItems();
+      const currentIndex = items.indexOf(document.activeElement);
+
+      if (event.key === "Escape") {
+        setExportMenuOpen(false, { restoreFocus: true });
+        return;
+      }
+
+      if (event.key === "ArrowDown") {
+        event.preventDefault();
+        items[(currentIndex + 1) % items.length].focus();
+        return;
+      }
+
+      if (event.key === "ArrowUp") {
+        event.preventDefault();
+        items[(currentIndex - 1 + items.length) % items.length].focus();
+        return;
+      }
+
+      if (event.key === "Home") {
+        event.preventDefault();
+        items[0].focus();
+        return;
+      }
+
+      if (event.key === "End") {
+        event.preventDefault();
+        items[items.length - 1].focus();
+      }
+    });
+
+    document.addEventListener("click", (event) => {
+      if (!dom.exportWrap.contains(event.target)) {
+        setExportMenuOpen(false);
+      }
+    });
+
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") {
+        setExportMenuOpen(false);
+      }
+    });
+
+    dom.legalButton.addEventListener("click", openLegalDialog);
+    dom.legalCloseButton.addEventListener("click", closeLegalDialog);
+    dom.legalOverlay.addEventListener("click", (event) => {
+      if (event.target === dom.legalOverlay) {
+        closeLegalDialog();
+      }
+    });
+  }
+
+  function init() {
+    bindEvents();
+    buildSvg();
+    updateSummary();
+  }
+
+  init();
+})();
 </script>
 </body>
 </html>
