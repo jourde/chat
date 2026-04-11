@@ -32,6 +32,7 @@ The application also supports contradiction mapping, summary generation, JSON-ba
 - Additional notes area
 - Summary export as plain text, Markdown, or JSON
 - JSON import using the app's export schema
+- Blank JSON template export for AI-assisted completion from source documents
 - Diagram export as `SVG` or `PNG`
 - Standalone export of interface copy for UI review
 - Clipboard copy for summary and notes
@@ -49,7 +50,7 @@ The action bar is organised into three groups:
   - `Export UI Content for Review`
   - `Copy summary and notes`
   - `Export diagram` → `SVG` or `PNG`
-  - `Export summary and notes` → `Plain text`, `Markdown`, or `JSON`
+  - `Export record` → `Plain text`, `Markdown`, `JSON`, or `JSON template for AI`
   - `Import JSON`
 
 ## Usage
@@ -84,11 +85,14 @@ To analyse two interacting activity systems:
 
 ### Import and export
 
-- Use `Export summary and notes` to download the current analysis as:
+- Use `Export record` to download the current analysis as:
   - plain text
   - Markdown
   - JSON
+- Use `Export record` → `JSON template for AI` to download a blank import template with node labels, guidance, and prompts
+- Give that template plus a source text to ChatGPT and ask it to preserve all keys while filling the `value` fields and other text fields
 - Use `Import JSON` to restore a previous analysis from the app's JSON export format
+- The importer validates that every required node entry is still present, so renamed or removed node identifiers are rejected
 - Use `Export diagram` to download the current diagram as:
   - `SVG`
   - `PNG`
