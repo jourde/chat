@@ -774,6 +774,7 @@
             <button role="menuitem" data-fmt="text">Plain text</button>
             <button role="menuitem" data-fmt="markdown">Markdown</button>
             <button role="menuitem" data-fmt="json">JSON</button>
+            <button role="menuitem" data-fmt="json-template">JSON template for AI</button>
           </div>
         </div>
         <button id="import-json-btn">Import JSON</button>
@@ -958,6 +959,7 @@
     text: "#1f1f1c",
     muted: "#676761",
     accent: "#385168",
+    highlight: "#f6efb3",
     contradiction: "#8a4b08",
     intersystemic: "#4b5563"
   });
@@ -1101,6 +1103,7 @@
   const ALL_NODES = [...NODE_DEFINITIONS, ...SECONDARY_NODE_DEFINITIONS];
   const ALL_NODE_MAP = new Map(ALL_NODES.map((node) => [node.id, node]));
   const FULL_VIEWBOX_WIDTH = GEOMETRY.leftGap + GEOMETRY.width;
+  const REQUIRED_NODE_IDS = Object.freeze(NODE_DEFINITIONS.map(({ id }) => id));
 
   const createEmptyNodeValues = () =>
     Object.fromEntries(NODE_DEFINITIONS.map(({ id }) => [id, ""]));
@@ -1130,10 +1133,13 @@
     contradictionLayer: null,
     sharedObjectGroup: null,
     sharedObjectPreview: null,
+    sharedObjectPreviewHighlight: null,
     sharedOutcomeGroup: null,
     sharedOutcomePreview: null,
+    sharedOutcomePreviewHighlight: null,
     outcomeGroup: null,
-    outcomePreview: null
+    outcomePreview: null,
+    outcomePreviewHighlight: null
   };
 
   const dom = {
@@ -1198,6 +1204,24 @@
     const element = createSvgElement(tagName, attributes, parent);
     element.textContent = textContent;
     return element;
+  }
+
+  function updateTextHighlightRect(textElement, highlightRect, { paddingX = 4, paddingY = 2 } = {}) {
+    if (!textElement || !highlightRect) {
+      return;
+    }
+
+    if (!textElement.textContent?.trim()) {
+      highlightRect.setAttribute("display", "none");
+      return;
+    }
+
+    const bounds = textElement.getBBox();
+    highlightRect.setAttribute("x", String(bounds.x - paddingX));
+    highlightRect.setAttribute("y", String(bounds.y - paddingY));
+    highlightRect.setAttribute("width", String(bounds.width + (paddingX * 2)));
+    highlightRect.setAttribute("height", String(bounds.height + (paddingY * 2)));
+    highlightRect.setAttribute("display", "block");
   }
 
   function getPreviewText(value, maxChars) {
@@ -1433,6 +1457,7 @@
     const previewLimit = NODE_PREVIEW_LIMITS[baseNodeId] || 24;
     nodeElement.preview.textContent = getPreviewText(nodeValue, previewLimit);
     nodeElement.preview.setAttribute("fill", nodeColor);
+    updateTextHighlightRect(nodeElement.preview, nodeElement.previewHighlight);
 
     updateNodeAriaLabel(nodeId);
   }
@@ -1568,6 +1593,17 @@
       { x: centerX, y: sharedOutcomeTop + 32, "text-anchor": "middle", "font-size": "10", fill: DIAGRAM_COLORS.muted },
       "Outcome(s)"
     );
+    svgState.sharedOutcomePreviewHighlight = createSvgElement(
+      "rect",
+      {
+        rx: "3",
+        ry: "3",
+        fill: DIAGRAM_COLORS.highlight,
+        display: "none",
+        "aria-hidden": "true"
+      },
+      sharedOutcomeGroup
+    );
     svgState.sharedOutcomePreview = appendTextElement(
       sharedOutcomeGroup,
       "text",
@@ -1618,6 +1654,17 @@
       "text",
       { x: centerX, y: centerY + 6, "text-anchor": "middle", "font-size": "10", "font-weight": "600", fill: DIAGRAM_COLORS.text },
       "Object"
+    );
+    svgState.sharedObjectPreviewHighlight = createSvgElement(
+      "rect",
+      {
+        rx: "3",
+        ry: "3",
+        fill: DIAGRAM_COLORS.highlight,
+        display: "none",
+        "aria-hidden": "true"
+      },
+      sharedObjectGroup
     );
     svgState.sharedObjectPreview = appendTextElement(
       sharedObjectGroup,
@@ -1693,6 +1740,17 @@
         fill: DIAGRAM_COLORS.text
       },
       "Outcome"
+    );
+    svgState.outcomePreviewHighlight = createSvgElement(
+      "rect",
+      {
+        rx: "3",
+        ry: "3",
+        fill: DIAGRAM_COLORS.highlight,
+        display: "none",
+        "aria-hidden": "true"
+      },
+      outcomeGroup
     );
     svgState.outcomePreview = appendTextElement(
       outcomeGroup,
@@ -1830,6 +1888,17 @@
       const previewY = node.labelOffsetY < 0
         ? node.labelOffsetY - 14
         : (node.secondaryLabelOffsetY ? node.secondaryLabelOffsetY + 14 : node.labelOffsetY + 14);
+      const previewHighlight = createSvgElement(
+        "rect",
+        {
+          rx: "3",
+          ry: "3",
+          fill: DIAGRAM_COLORS.highlight,
+          display: "none",
+          "aria-hidden": "true"
+        },
+        group
+      );
       const preview = appendTextElement(
         group,
         "text",
@@ -1851,6 +1920,7 @@
         dot,
         primaryLabel,
         secondaryLabel,
+        previewHighlight,
         preview
       });
     });
@@ -1862,10 +1932,13 @@
     svgState.contradictionLayer = null;
     svgState.sharedObjectGroup = null;
     svgState.sharedObjectPreview = null;
+    svgState.sharedObjectPreviewHighlight = null;
     svgState.sharedOutcomeGroup = null;
     svgState.sharedOutcomePreview = null;
+    svgState.sharedOutcomePreviewHighlight = null;
     svgState.outcomeGroup = null;
     svgState.outcomePreview = null;
+    svgState.outcomePreviewHighlight = null;
 
     const viewBoxWidth = state.dualMode ? FULL_VIEWBOX_WIDTH : GEOMETRY.width;
     dom.svg.setAttribute("viewBox", `0 0 ${viewBoxWidth} ${GEOMETRY.height}`);
@@ -1971,14 +2044,17 @@
 
     if (svgState.sharedObjectPreview) {
       svgState.sharedObjectPreview.textContent = truncatePreview(state.sharedObject);
+      updateTextHighlightRect(svgState.sharedObjectPreview, svgState.sharedObjectPreviewHighlight);
     }
 
     if (svgState.sharedOutcomePreview) {
       svgState.sharedOutcomePreview.textContent = truncatePreview(state.sharedOutcome);
+      updateTextHighlightRect(svgState.sharedOutcomePreview, svgState.sharedOutcomePreviewHighlight);
     }
 
     if (svgState.outcomePreview) {
       svgState.outcomePreview.textContent = truncatePreview(state.outcome);
+      updateTextHighlightRect(svgState.outcomePreview, svgState.outcomePreviewHighlight);
     }
 
     updateSharedGroupAriaLabels();
@@ -2475,6 +2551,61 @@
     return JSON.stringify(buildExportData(), null, 2);
   }
 
+  function buildTemplateInstructions(mode) {
+    return {
+      purpose: "Fill this template from a source text, then import the completed JSON into the Activity System Analyser.",
+      mode,
+      rules: [
+        "Preserve the JSON structure and every existing key.",
+        "Only fill string values such as node.value, outcome, sharedObject, sharedOutcome and notes.",
+        "Keep each node.id unchanged so the importer can match fields correctly.",
+        "Leave contradictions as empty arrays unless the source text explicitly describes contradictions."
+      ]
+    };
+  }
+
+  function buildTemplateNodeEntries() {
+    return NODE_DEFINITIONS.map((node) => ({
+      id: node.id,
+      label: node.label,
+      guidance: node.guidance,
+      prompt: node.prompt,
+      value: ""
+    }));
+  }
+
+  function buildJsonTemplateData() {
+    if (!state.dualMode) {
+      return {
+        _template: buildTemplateInstructions("single-system"),
+        nodes: buildTemplateNodeEntries(),
+        outcome: "",
+        contradictions: [],
+        notes: ""
+      };
+    }
+
+    return {
+      _template: buildTemplateInstructions("dual-system"),
+      system1: {
+        nodes: buildTemplateNodeEntries(),
+        contradictions: []
+      },
+      system2: {
+        nodes: buildTemplateNodeEntries(),
+        contradictions: []
+      },
+      intersystemicContradictions: [],
+      sharedObject: "",
+      sharedOutcome: "",
+      notes: ""
+    };
+  }
+
+  function exportJsonTemplate() {
+    return JSON.stringify(buildJsonTemplateData(), null, 2);
+  }
+
   function getDiagramDimensions() {
     return {
       width: state.dualMode ? FULL_VIEWBOX_WIDTH : GEOMETRY.width,
@@ -2587,6 +2718,32 @@
     return values;
   }
 
+  function getMissingImportedNodeIds(nodes) {
+    const seenNodeIds = new Set();
+
+    if (!Array.isArray(nodes)) {
+      return [...REQUIRED_NODE_IDS];
+    }
+
+    nodes.forEach((node) => {
+      if (isPlainObject(node) && typeof node.id === "string" && NODE_MAP.has(node.id)) {
+        seenNodeIds.add(node.id);
+      }
+    });
+
+    return REQUIRED_NODE_IDS.filter((nodeId) => !seenNodeIds.has(nodeId));
+  }
+
+  function validateImportedNodeList(nodes, sectionLabel) {
+    const missingNodeIds = getMissingImportedNodeIds(nodes);
+    if (!missingNodeIds.length) {
+      return;
+    }
+
+    const missingLabels = missingNodeIds.map((nodeId) => NODE_MAP.get(nodeId)?.label || nodeId);
+    throw new Error(`The JSON import is missing required ${sectionLabel} entries: ${missingLabels.join(", ")}.`);
+  }
+
   function parseImportedNodeReference(reference, fallbackSystem) {
     if (typeof reference !== "string") {
       return null;
@@ -2658,6 +2815,7 @@
     importedState.notes = toTextValue(data.notes);
 
     if (Array.isArray(data.nodes)) {
+      validateImportedNodeList(data.nodes, "single-system node");
       importedState.system1 = readImportedNodeValues(data.nodes);
       importedState.outcome = toTextValue(data.outcome);
       importedState.contradictions = parseImportedContradictions(data.contradictions, 1);
@@ -2665,6 +2823,8 @@
     }
 
     if (isPlainObject(data.system1) && isPlainObject(data.system2)) {
+      validateImportedNodeList(data.system1.nodes, "System 1 node");
+      validateImportedNodeList(data.system2.nodes, "System 2 node");
       importedState.dualMode = true;
       importedState.system1 = readImportedNodeValues(data.system1.nodes);
       importedState.system2 = readImportedNodeValues(data.system2.nodes);
@@ -3086,6 +3246,8 @@
         downloadFile(exportMarkdown(), "activity-system.md", "text/markdown");
       } else if (format === "json") {
         downloadFile(exportJson(), "activity-system.json", "application/json");
+      } else if (format === "json-template") {
+        downloadFile(exportJsonTemplate(), "activity-system-template.json", "application/json");
       }
 
       setExportMenuOpen(false, { restoreFocus: true });
