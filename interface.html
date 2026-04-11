@@ -973,6 +973,15 @@
     }
   ]);
 
+  const NODE_PREVIEW_LIMITS = Object.freeze({
+    tools: 30,
+    subject: 24,
+    object: 24,
+    rules: 30,
+    community: 26,
+    division: 26
+  });
+
   const NODE_DEFINITIONS = Object.freeze([
     {
       id: "tools",
@@ -1191,6 +1200,28 @@
     return element;
   }
 
+  function getPreviewText(value, maxChars) {
+    const trimmedValue = value.trim().replace(/\s+/g, " ");
+    if (!trimmedValue) {
+      return "";
+    }
+
+    if (trimmedValue.length <= maxChars) {
+      return trimmedValue;
+    }
+
+    const candidate = trimmedValue.slice(0, Math.max(1, maxChars - 1));
+    const breakpoint = Math.max(
+      candidate.lastIndexOf(" "),
+      candidate.lastIndexOf(","),
+      candidate.lastIndexOf(";")
+    );
+    const truncated = breakpoint > Math.floor(maxChars * 0.8)
+      ? candidate.slice(0, breakpoint)
+      : candidate;
+    return `${truncated.trimEnd()}…`;
+  }
+
   function getBaseNodeId(nodeId) {
     return nodeId.endsWith("_2") ? nodeId.slice(0, -2) : nodeId;
   }
@@ -1399,10 +1430,8 @@
       nodeElement.secondaryLabel.setAttribute("fill", labelColor);
     }
 
-    const previewText = nodeValue
-      ? (nodeValue.length > 18 ? `${nodeValue.slice(0, 16)}…` : nodeValue)
-      : "";
-    nodeElement.preview.textContent = previewText;
+    const previewLimit = NODE_PREVIEW_LIMITS[baseNodeId] || 24;
+    nodeElement.preview.textContent = getPreviewText(nodeValue, previewLimit);
     nodeElement.preview.setAttribute("fill", nodeColor);
 
     updateNodeAriaLabel(nodeId);
@@ -1808,10 +1837,10 @@
           x: node.x + node.labelOffsetX,
           y: node.y + previewY,
           "text-anchor": node.anchor,
-          "font-size": "10",
-          fill: DIAGRAM_COLORS.muted,
-          "font-style": "italic",
-          "aria-hidden": "true"
+        "font-size": "9",
+        fill: DIAGRAM_COLORS.muted,
+        "font-style": "italic",
+        "aria-hidden": "true"
         },
         ""
       );
@@ -1938,13 +1967,7 @@
   }
 
   function updateSharedPreviews() {
-    const truncatePreview = (value) => {
-      const trimmedValue = value.trim();
-      if (!trimmedValue) {
-        return "";
-      }
-      return trimmedValue.length > 12 ? `${trimmedValue.slice(0, 10)}…` : trimmedValue;
-    };
+    const truncatePreview = (value) => getPreviewText(value, 24);
 
     if (svgState.sharedObjectPreview) {
       svgState.sharedObjectPreview.textContent = truncatePreview(state.sharedObject);
