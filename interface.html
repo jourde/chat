@@ -6,24 +6,24 @@
 <title>Activity System Analyser based on cultural-historical activity theory (CHAT)</title>
 <style>
   :root {
-    --page-bg: #f9f9f7;
+    --page-bg: #f5f5f2;
     --surface: #ffffff;
-    --surface-muted: #f7f7f4;
-    --surface-control: #f2f2f0;
-    --surface-control-hover: #e8e8e6;
+    --surface-muted: #fafaf8;
+    --surface-control: #f3f3f0;
+    --surface-control-hover: #ebebe7;
     --text: #111111;
-    --text-muted: #555555;
-    --text-soft: #767676;
-    --border: #c4c4c4;
-    --border-strong: #767676;
-    --focus: #005fcc;
-    --contradiction: #b45309;
-    --contradiction-soft: #fef3c7;
-    --contradiction-text: #7a3507;
-    --inter-system: #7c3aed;
-    --link: #185fa5;
-    --shadow-soft: 0 2px 8px rgba(0, 0, 0, 0.12);
-    --shadow-strong: 0 8px 32px rgba(0, 0, 0, 0.2);
+    --text-muted: #4f4f4a;
+    --text-soft: #6f6f69;
+    --border: #d8d8d2;
+    --border-strong: #9a9a93;
+    --focus: #1d5d93;
+    --accent: #385168;
+    --accent-soft: #eef3f6;
+    --contradiction: #8a4b08;
+    --contradiction-soft: #f7f1e8;
+    --contradiction-text: #6e3a05;
+    --inter-system: #4b5563;
+    --link: #2f5d86;
   }
 
   *,
@@ -40,21 +40,25 @@
 
   body {
     min-height: 100vh;
-    padding: 1.5rem;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem 1.25rem 3rem;
     overflow-x: hidden;
-    font-family: system-ui, sans-serif;
+    font-family: Arial, "Helvetica Neue", Helvetica, sans-serif;
+    line-height: 1.5;
     background: var(--page-bg);
     color: var(--text);
   }
 
   h1 {
-    font-size: 1rem;
+    font-size: 1.75rem;
     font-weight: 600;
+    line-height: 1.2;
   }
 
   h2 {
-    font-size: 0.8125rem;
-    font-weight: 500;
+    font-size: 1rem;
+    font-weight: 600;
   }
 
   button,
@@ -62,8 +66,36 @@
     font: inherit;
   }
 
+  a {
+    color: var(--link);
+    text-decoration: none;
+  }
+
+  a:hover {
+    text-decoration: underline;
+    text-underline-offset: 0.18em;
+  }
+
   .page-header {
-    margin-bottom: 1rem;
+    margin-bottom: 1.75rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .page-eyebrow {
+    margin-bottom: 0.35rem;
+    color: var(--text-muted);
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .page-intro {
+    margin-top: 0.5rem;
+    color: var(--text-muted);
+    font-size: 0.875rem;
+    white-space: nowrap;
   }
 
   .visually-hidden {
@@ -93,31 +125,52 @@
   #app {
     display: flex;
     flex-direction: column;
-    gap: 0.75rem;
+    gap: 1.5rem;
     width: 100%;
     max-width: 100%;
   }
 
   #left {
+    order: 1;
     display: flex;
     flex-direction: column;
-    gap: 0.625rem;
+    gap: 0.875rem;
     width: 100%;
     max-width: 100%;
     min-width: 0;
   }
 
   #right {
+    order: 2;
     display: flex;
     flex-direction: column;
     gap: 0.625rem;
     width: 100%;
     min-width: 0;
     max-width: 100%;
-    padding: 0.75rem;
+    padding: 1rem;
     border: 1px solid var(--border);
-    border-radius: 12px;
+    border-radius: 10px;
     background: var(--surface);
+  }
+
+  .panel-title,
+  .section-header h2 {
+    margin-bottom: 0.2rem;
+  }
+
+  .panel-intro,
+  .section-intro,
+  #summary-intro {
+    color: var(--text-muted);
+    font-size: 0.8125rem;
+    line-height: 1.55;
+  }
+
+  .section-header {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
   }
 
   #hint-text {
@@ -132,36 +185,46 @@
   }
 
   #right .btn-row[role="toolbar"] {
-    align-items: stretch;
-    gap: 10px;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    align-items: start;
+    gap: 0.625rem;
+    width: 100%;
     overflow: visible;
   }
 
   .toolbar-group {
     display: flex;
     flex-wrap: wrap;
-    align-items: center;
-    gap: 8px;
-    padding: 8px 10px;
-    border: 1px solid #d6d6d1;
-    border-radius: 10px;
-    background: var(--surface-muted);
+    align-items: flex-start;
+    gap: 6px;
+    min-width: 0;
+    padding: 0 0.625rem 0 0;
+    border-top: 0;
+    border-right: 1px solid var(--border);
+    background: transparent;
+  }
+
+  .toolbar-group:last-child {
+    padding-right: 0;
+    border-right: 0;
   }
 
   .toolbar-group-label {
     color: var(--text-muted);
     font-size: 0.6875rem;
     font-weight: 700;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.04em;
     text-transform: uppercase;
+    flex-basis: 100%;
     white-space: nowrap;
   }
 
   button {
     cursor: pointer;
-    padding: 7px 16px;
+    padding: 0.5rem 0.875rem;
     border: 1px solid var(--border-strong);
-    border-radius: 8px;
+    border-radius: 6px;
     background: var(--surface-control);
     color: var(--text);
     font-size: 0.8125rem;
@@ -190,7 +253,7 @@
     max-width: 100%;
     height: 100%;
     border: 1px solid var(--border);
-    border-radius: 12px;
+    border-radius: 10px;
     background: var(--surface);
   }
 
@@ -214,7 +277,7 @@
 
   #editor,
   #contra-editor {
-    padding: 0.625rem 0.75rem;
+    padding: 0.875rem 1rem;
     border-radius: 10px;
     background: var(--surface);
   }
@@ -255,10 +318,10 @@
 
   textarea {
     width: 100%;
-    min-height: 3em;
-    padding: 6px 8px;
+    min-height: 3.5em;
+    padding: 0.6rem 0.7rem;
     border: 1px solid var(--border-strong);
-    border-radius: 8px;
+    border-radius: 6px;
     background: var(--surface);
     color: var(--text);
     font-size: 0.8125rem;
@@ -268,22 +331,25 @@
   #summary-section {
     display: flex;
     flex-direction: column;
-    margin-top: 1rem;
+    margin-top: 1.5rem;
     overflow: hidden;
     border: 1px solid var(--border);
-    border-radius: 12px;
+    border-radius: 10px;
     background: var(--surface);
   }
 
   #chat-header {
-    padding: 9px 13px;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    padding: 1rem 1.1rem 0.9rem;
     border-bottom: 1px solid var(--border);
   }
 
   #contra-guide {
-    padding: 10px 13px;
+    padding: 0.9rem 1.1rem;
     border-bottom: 1px solid var(--contradiction);
-    background: #fffbeb;
+    background: var(--contradiction-soft);
     color: #333333;
     font-size: 0.75rem;
     line-height: 1.6;
@@ -307,22 +373,23 @@
   }
 
   #contra-guide .cg-example {
-    color: #666666;
+    color: var(--text-muted);
     font-style: italic;
   }
 
   #contra-guide .cg-note {
     margin-top: 8px;
     padding-top: 7px;
-    border-top: 1px solid #e5c98a;
-    color: #7a6030;
+    border-top: 1px solid #dbc8ae;
+    color: #745733;
     font-size: 0.7rem;
     font-style: italic;
     line-height: 1.5;
   }
 
   #summary-main {
-    display: flex;
+    display: grid;
+    grid-template-columns: minmax(0, 1.6fr) minmax(16rem, 0.8fr);
     min-height: 0;
   }
 
@@ -330,10 +397,10 @@
     display: flex;
     flex: 1;
     flex-direction: column;
-    gap: 10px;
-    max-height: 280px;
+    gap: 0.75rem;
+    max-height: 32rem;
     overflow-y: auto;
-    padding: 12px 13px;
+    padding: 1rem 1.1rem 1.15rem;
   }
 
   .sr-row {
@@ -341,28 +408,31 @@
     line-height: 1.5;
   }
 
-  .sr-label,
-  .sr-sys-heading {
+  .sr-label {
+    margin-bottom: 0.2rem;
+    color: var(--text-muted);
+    font-size: 0.75rem;
     font-weight: 700;
+  }
+
+  .sr-sys-heading {
+    margin-top: 0.1rem;
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: var(--text);
+  }
+
+  .sr-group-heading {
+    margin-top: 0.2rem;
+    color: var(--text-muted);
+    font-size: 0.6875rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
     text-transform: uppercase;
   }
 
-  .sr-label {
-    margin-bottom: 3px;
-    font-size: 0.6875rem;
-    letter-spacing: 0.05em;
-  }
-
-  .sr-sys-heading {
-    margin-top: 4px;
-    margin-bottom: 2px;
-    color: #444444;
-    font-size: 0.75rem;
-    letter-spacing: 0.06em;
-  }
-
   .sr-value {
-    color: #222222;
+    color: var(--text);
     white-space: pre-wrap;
     overflow-wrap: break-word;
   }
@@ -373,50 +443,48 @@
   }
 
   .sr-divider {
-    margin: 2px 0;
+    margin: 0.15rem 0;
     border: none;
-    border-top: 1px solid #bbbbbb;
+    border-top: 1px solid var(--border);
   }
 
   .sr-contra,
   .sr-contra-inter {
-    padding: 5px 9px;
-    border-radius: 7px;
+    padding: 0.6rem 0.75rem;
+    border-radius: 6px;
     font-size: 0.75rem;
     line-height: 1.5;
   }
 
   .sr-contra {
     border-left: 3px solid var(--contradiction);
-    background: #fef9ec;
+    background: #fbf8f2;
   }
 
   .sr-contra-inter {
     border-left: 3px solid var(--inter-system);
-    background: #f5f3ff;
+    background: #f6f7f8;
   }
 
   #notes-row {
     display: flex;
-    flex: 0 0 240px;
     flex-direction: column;
-    padding: 9px 11px;
+    padding: 1rem 1.1rem 1.15rem;
     border-left: 1px solid var(--border);
   }
 
   #notes-row label {
     display: block;
-    margin-bottom: 4px;
+    margin-bottom: 0.35rem;
     color: var(--text-muted);
-    font-size: 0.6875rem;
+    font-size: 0.75rem;
     font-weight: 700;
-    letter-spacing: 0.05em;
-    text-transform: uppercase;
   }
 
   #notes-row textarea {
     flex: 1;
-    resize: none;
+    min-height: 14rem;
+    resize: vertical;
   }
 
   .tooltip {
@@ -428,7 +496,6 @@
     border: 1px solid var(--border-strong);
     border-radius: 6px;
     background: var(--surface);
-    box-shadow: var(--shadow-soft);
     color: #333333;
     font-size: 0.75rem;
     line-height: 1.4;
@@ -452,7 +519,6 @@
     border: 1px solid var(--border-strong);
     border-radius: 8px;
     background: var(--surface);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
   }
 
   #export-menu button,
@@ -484,7 +550,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background: rgba(0, 0, 0, 0.5);
+    background: rgba(244, 244, 240, 0.92);
   }
 
   .dialog-box {
@@ -492,9 +558,9 @@
     width: 92%;
     max-height: 85vh;
     overflow-y: auto;
-    border-radius: 14px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
     background: var(--surface);
-    box-shadow: var(--shadow-strong);
   }
 
   .dialog-close {
@@ -557,15 +623,18 @@
   }
 
   #legal-content a:hover {
-    text-decoration: none;
+    text-decoration: underline;
   }
 
   #page-footer {
     display: flex;
+    flex-wrap: wrap;
     justify-content: center;
     align-items: center;
     gap: 12px;
-    margin-top: 1.25rem;
+    margin-top: 1.5rem;
+    padding-top: 0.9rem;
+    border-top: 1px solid var(--border);
   }
 
   #footer-credit {
@@ -574,17 +643,16 @@
   }
 
   #legal-btn {
-    padding: 4px 8px;
+    padding: 0;
     border: none;
-    border-radius: 4px;
     background: none;
     color: var(--text-muted);
     font-size: 0.75rem;
-    text-decoration: underline;
   }
 
   #legal-btn:hover {
     color: var(--text);
+    text-decoration: underline;
   }
 
   .mt-6 {
@@ -596,22 +664,29 @@
     font-size: 0.75rem;
   }
 
-  #app.dual-active #left {
-    width: 100%;
-  }
-
   @media (max-width: 700px) {
+    #right .btn-row[role="toolbar"] {
+      grid-template-columns: 1fr;
+    }
+
     .toolbar-group {
       width: 100%;
+      padding-right: 0;
+      border-right: 0;
+      border-top: 1px solid var(--border);
+      padding-top: 0.875rem;
+    }
+
+    .toolbar-group:first-child {
+      border-top: 0;
+      padding-top: 0;
     }
 
     #summary-main {
-      flex-direction: column;
+      grid-template-columns: 1fr;
     }
 
     #notes-row {
-      flex-basis: auto;
-      min-height: 12rem;
       border-top: 1px solid var(--border);
       border-left: 0;
     }
@@ -620,31 +695,33 @@
 </head>
 <body>
 <header class="page-header">
-  <h1>Activity System Analyser based on cultural-historical activity theory (CHAT)</h1>
+  <p class="page-eyebrow">Cultural-historical activity theory</p>
+  <h1>Activity System Analyser</h1>
+  <p class="page-intro">A focused workspace for describing activity systems, comparing shared objects, and documenting contradictions. Select a component to edit it. Hover for guidance.</p>
 </header>
 
 <div id="live-region" aria-live="polite" aria-atomic="true" class="visually-hidden"></div>
 
 <main id="app">
   <aside id="right" aria-labelledby="controls-heading">
-    <h2 id="controls-heading" class="visually-hidden">Controls</h2>
-    <p id="hint-text" aria-live="polite">Click a node to edit it. Hover for guidance.</p>
+    <h2 id="controls-heading" class="panel-title">Analysis controls</h2>
+    <p id="hint-text" aria-live="polite" class="visually-hidden"></p>
 
     <div class="btn-row" role="toolbar" aria-label="Actions">
-      <div class="toolbar-group" role="group" aria-label="View actions">
-        <span class="toolbar-group-label">View</span>
-        <button id="dual-btn" aria-pressed="false">Show two systems</button>
+      <div class="toolbar-group" role="group" aria-label="Analysis mode">
+        <span class="toolbar-group-label">Analysis mode</span>
+        <button id="dual-btn" aria-pressed="false">Compare two systems</button>
       </div>
 
-      <div class="toolbar-group" role="group" aria-label="Contradiction actions">
-        <span class="toolbar-group-label">Contradictions</span>
-        <button id="contra-btn" aria-pressed="false">⚡ Add a contradiction</button>
+      <div class="toolbar-group" role="group" aria-label="Contradiction mapping">
+        <span class="toolbar-group-label">Contradiction mapping</span>
+        <button id="contra-btn" aria-pressed="false">Map a contradiction</button>
       </div>
 
-      <div class="toolbar-group" role="group" aria-label="Export actions">
-        <span class="toolbar-group-label">Export</span>
-        <button id="export-interface-btn">Export UI Content for Review</button>
-        <button id="copy-btn">Copy summary and notes</button>
+      <div class="toolbar-group" role="group" aria-label="Export and transfer">
+        <span class="toolbar-group-label">Export and transfer</span>
+        <button id="export-interface-btn">Export interface text</button>
+        <button id="copy-btn">Copy record and notes</button>
         <div id="diagram-export-wrap">
           <button
             id="diagram-export-btn"
@@ -652,7 +729,7 @@
             aria-expanded="false"
             aria-controls="diagram-export-menu"
           >
-            Export diagram ↓
+            Export diagram
           </button>
           <div id="diagram-export-menu" role="menu" aria-label="Diagram export format" hidden>
             <button role="menuitem" data-diagram-fmt="svg">SVG</button>
@@ -666,7 +743,7 @@
             aria-expanded="false"
             aria-controls="export-menu"
           >
-            Export summary and notes ↓
+            Export record
           </button>
           <div id="export-menu" role="menu" aria-label="Export format" hidden>
             <button role="menuitem" data-fmt="text">Plain text</button>
@@ -681,7 +758,10 @@
   </aside>
 
   <section id="left" aria-labelledby="diagram-heading">
-    <h2 id="diagram-heading" class="visually-hidden">Activity system diagram</h2>
+    <div class="section-header">
+      <h2 id="diagram-heading">Activity system diagram</h2>
+      <p class="section-intro">Enter concise descriptions directly on the diagram. The components are organised around the object of activity and its social conditions.</p>
+    </div>
     <p id="diagram-instructions" class="visually-hidden">
       The diagram contains interactive nodes. Press Tab to focus a node, then Enter or Space to edit it.
     </p>
@@ -730,7 +810,8 @@
 
 <section id="summary-section" aria-labelledby="summary-heading">
   <div id="chat-header">
-    <h2 id="summary-heading">Summary</h2>
+    <h2 id="summary-heading">Analysis record</h2>
+    <p id="summary-intro">The record is grouped by analytical theme for quick reading and review.</p>
   </div>
 
   <section id="contra-guide" aria-label="Contradiction guidance" hidden>
@@ -759,7 +840,7 @@
     <div id="summary-body" aria-live="polite" aria-label="Live activity system summary"></div>
 
     <aside id="notes-row">
-      <label for="notes-input">Additional notes</label>
+      <label for="notes-input">Working notes</label>
       <textarea id="notes-input" placeholder="Additional notes…"></textarea>
     </aside>
   </div>
@@ -768,7 +849,7 @@
 <footer id="page-footer">
   <p id="footer-credit">François Jourde (2026) — MIT Licence</p>
   <span class="footer-separator" aria-hidden="true">|</span>
-  <button id="legal-btn">Legal Notice &amp; Privacy Policy</button>
+  <button id="legal-btn">Legal notice and privacy policy</button>
 </footer>
 
 <div id="legal-overlay" class="dialog-overlay" hidden>
@@ -839,13 +920,33 @@
   const COMMUNITY_Y = (GEOMETRY.rulesY + GEOMETRY.divisionY) / 2;
 
   const NODE_COLORS = Object.freeze({
-    tools: "#534AB7",
-    subject: "#0F6E56",
-    object: "#993C1D",
-    rules: "#185FA5",
-    community: "#854F0B",
-    division: "#993556"
+    tools: "#4b5563",
+    subject: "#4b5563",
+    object: "#4b5563",
+    rules: "#4b5563",
+    community: "#4b5563",
+    division: "#4b5563"
   });
+
+  const DIAGRAM_COLORS = Object.freeze({
+    stroke: "#4f4f4a",
+    text: "#1f1f1c",
+    muted: "#676761",
+    accent: "#385168",
+    contradiction: "#8a4b08",
+    intersystemic: "#4b5563"
+  });
+
+  const SUMMARY_THEMES = Object.freeze([
+    {
+      title: "Core activity",
+      nodeIds: ["subject", "object", "tools"]
+    },
+    {
+      title: "Social organisation",
+      nodeIds: ["rules", "community", "division"]
+    }
+  ]);
 
   const NODE_DEFINITIONS = Object.freeze([
     {
@@ -1129,7 +1230,7 @@
         "path",
         {
           d: "M0,1 L7,4 L0,7 z",
-          fill: id === "tip-out" ? "#595959" : "#333"
+          fill: DIAGRAM_COLORS.stroke
         },
         marker
       );
@@ -1154,7 +1255,7 @@
     const offsetX = (wrapWidth - contentWidth) / 2;
 
     const strong = document.createElement("strong");
-    strong.style.color = NODE_COLORS[baseNodeId];
+    strong.style.color = DIAGRAM_COLORS.accent;
     strong.textContent = node.short;
 
     dom.tooltip.replaceChildren(
@@ -1163,7 +1264,7 @@
       document.createTextNode(node.guidance)
     );
     dom.tooltip.style.display = "block";
-    dom.tooltip.style.borderColor = NODE_COLORS[baseNodeId];
+    dom.tooltip.style.borderColor = DIAGRAM_COLORS.stroke;
 
     let left = offsetX + (node.x * scale) + (node.labelOffsetX || 0) - 90;
     let top = (node.y * scale) + (node.labelOffsetY < 0 ? -90 : 20);
@@ -1257,7 +1358,7 @@
 
     nodeElement.circle.setAttribute(
       "stroke",
-      isFirstContradictionNode ? "#b45309" : (isActive || nodeValue ? nodeColor : "#333")
+      isFirstContradictionNode ? DIAGRAM_COLORS.contradiction : (isActive || nodeValue ? nodeColor : DIAGRAM_COLORS.stroke)
     );
     nodeElement.circle.setAttribute(
       "stroke-width",
@@ -1265,7 +1366,7 @@
     );
     nodeElement.dot.setAttribute("fill", nodeValue ? nodeColor : "transparent");
 
-    const labelColor = nodeValue || isActive ? nodeColor : "#222";
+    const labelColor = nodeValue || isActive ? nodeColor : DIAGRAM_COLORS.text;
     nodeElement.primaryLabel.setAttribute("fill", labelColor);
     if (nodeElement.secondaryLabel) {
       nodeElement.secondaryLabel.setAttribute("fill", labelColor);
@@ -1336,7 +1437,7 @@
         y1: centerY,
         x2: boxX - 4,
         y2: centerY,
-        stroke: "#595959",
+        stroke: DIAGRAM_COLORS.stroke,
         "stroke-width": "1.5",
         "marker-end": "url(#tip-out)"
       },
@@ -1349,7 +1450,7 @@
         y1: centerY,
         x2: boxX + boxWidth + 4,
         y2: centerY,
-        stroke: "#595959",
+        stroke: DIAGRAM_COLORS.stroke,
         "stroke-width": "1.5",
         "marker-end": "url(#tip-out)"
       },
@@ -1362,7 +1463,7 @@
         y1: boxY - 4,
         x2: centerX,
         y2: sharedOutcomeArrowY,
-        stroke: "#595959",
+        stroke: DIAGRAM_COLORS.stroke,
         "stroke-width": "1.5",
         "marker-end": "url(#tip-out)"
       },
@@ -1402,19 +1503,19 @@
     appendTextElement(
       sharedOutcomeGroup,
       "text",
-      { x: centerX, y: sharedOutcomeTop + 18, "text-anchor": "middle", "font-size": "10", fill: "#595959" },
+      { x: centerX, y: sharedOutcomeTop + 18, "text-anchor": "middle", "font-size": "10", fill: DIAGRAM_COLORS.muted },
       "Shared"
     );
     appendTextElement(
       sharedOutcomeGroup,
       "text",
-      { x: centerX, y: sharedOutcomeTop + 32, "text-anchor": "middle", "font-size": "10", fill: "#595959" },
+      { x: centerX, y: sharedOutcomeTop + 32, "text-anchor": "middle", "font-size": "10", fill: DIAGRAM_COLORS.muted },
       "Outcome(s)"
     );
     svgState.sharedOutcomePreview = appendTextElement(
       sharedOutcomeGroup,
       "text",
-      { x: centerX, y: sharedOutcomeTop + 48, "text-anchor": "middle", "font-size": "9", fill: "#185FA5", "font-style": "italic" },
+      { x: centerX, y: sharedOutcomeTop + 48, "text-anchor": "middle", "font-size": "9", fill: DIAGRAM_COLORS.accent, "font-style": "italic" },
       ""
     );
     svgState.sharedOutcomeGroup = sharedOutcomeGroup;
@@ -1445,7 +1546,7 @@
         height: boxHeight,
         rx: "8",
         fill: "#fff",
-        stroke: "#595959",
+        stroke: DIAGRAM_COLORS.stroke,
         "stroke-width": "1.5"
       },
       sharedObjectGroup
@@ -1453,19 +1554,19 @@
     appendTextElement(
       sharedObjectGroup,
       "text",
-      { x: centerX, y: centerY - 6, "text-anchor": "middle", "font-size": "10", "font-weight": "600", fill: "#444" },
+      { x: centerX, y: centerY - 6, "text-anchor": "middle", "font-size": "10", "font-weight": "600", fill: DIAGRAM_COLORS.text },
       "Shared"
     );
     appendTextElement(
       sharedObjectGroup,
       "text",
-      { x: centerX, y: centerY + 6, "text-anchor": "middle", "font-size": "10", "font-weight": "600", fill: "#444" },
+      { x: centerX, y: centerY + 6, "text-anchor": "middle", "font-size": "10", "font-weight": "600", fill: DIAGRAM_COLORS.text },
       "Object"
     );
     svgState.sharedObjectPreview = appendTextElement(
       sharedObjectGroup,
       "text",
-      { x: centerX, y: centerY + 19, "text-anchor": "middle", "font-size": "9", fill: "#185FA5", "font-style": "italic" },
+      { x: centerX, y: centerY + 19, "text-anchor": "middle", "font-size": "9", fill: DIAGRAM_COLORS.accent, "font-style": "italic" },
       ""
     );
     svgState.sharedObjectGroup = sharedObjectGroup;
@@ -1486,7 +1587,7 @@
         y1: centerY,
         x2: boxX - 4,
         y2: centerY,
-        stroke: "#595959",
+        stroke: DIAGRAM_COLORS.stroke,
         "stroke-width": "1.5",
         "marker-end": "url(#tip-out)"
       },
@@ -1519,7 +1620,7 @@
         height: 28,
         rx: "6",
         fill: "#fff",
-        stroke: "#595959",
+        stroke: DIAGRAM_COLORS.stroke,
         "stroke-width": "1.5"
       },
       outcomeGroup
@@ -1533,7 +1634,7 @@
         "text-anchor": "middle",
         "font-size": "10",
         "font-weight": "600",
-        fill: "#444"
+        fill: DIAGRAM_COLORS.text
       },
       "Outcome"
     );
@@ -1545,7 +1646,7 @@
         y: centerY + 11,
         "text-anchor": "middle",
         "font-size": "9",
-        fill: "#185FA5",
+        fill: DIAGRAM_COLORS.accent,
         "font-style": "italic"
       },
       ""
@@ -1568,7 +1669,7 @@
           y1: shortenedLine.y1,
           x2: shortenedLine.x2,
           y2: shortenedLine.y2,
-          stroke: "#333",
+          stroke: DIAGRAM_COLORS.stroke,
           "stroke-width": "1.5",
           "marker-start": "url(#tip-start)",
           "marker-end": "url(#tip-end)"
@@ -1621,7 +1722,7 @@
           cy: node.y,
           r: GEOMETRY.nodeRadius,
           fill: "white",
-          stroke: "#333",
+          stroke: DIAGRAM_COLORS.stroke,
           "stroke-width": "1.5"
         },
         group
@@ -1646,7 +1747,7 @@
           "text-anchor": node.anchor,
           "font-size": "12",
           "font-weight": "600",
-          fill: "#222",
+          fill: DIAGRAM_COLORS.text,
           "aria-hidden": "true"
         },
         node.lines[0]
@@ -1663,7 +1764,7 @@
             "text-anchor": node.anchor,
             "font-size": "12",
             "font-weight": "600",
-            fill: "#222",
+            fill: DIAGRAM_COLORS.text,
             "aria-hidden": "true"
           },
           node.lines[1]
@@ -1681,7 +1782,7 @@
           y: node.y + previewY,
           "text-anchor": node.anchor,
           "font-size": "10",
-          fill: "#555",
+          fill: DIAGRAM_COLORS.muted,
           "font-style": "italic",
           "aria-hidden": "true"
         },
@@ -1767,8 +1868,8 @@
     const isSharedOutcome = editorType === "sharedOutcome";
 
     dom.editor.hidden = false;
-    dom.editor.style.border = "2px solid #595959";
-    dom.editorLabel.style.color = "#595959";
+    dom.editor.style.border = `2px solid ${DIAGRAM_COLORS.stroke}`;
+    dom.editorLabel.style.color = DIAGRAM_COLORS.text;
 
     if (isSharedObject) {
       dom.editorLabel.textContent = "Shared Object";
@@ -1854,7 +1955,7 @@
             cy: node.y,
             r: GEOMETRY.nodeRadius + 7,
             fill: "none",
-            stroke: "#b45309",
+            stroke: DIAGRAM_COLORS.contradiction,
             "stroke-width": "2",
             "stroke-dasharray": "3,2.5"
           },
@@ -1880,7 +1981,7 @@
           y1: firstNode.y,
           x2: secondNode.x,
           y2: secondNode.y,
-          stroke: isInterSystemic ? "#7c3aed" : "#c0392b",
+          stroke: isInterSystemic ? DIAGRAM_COLORS.intersystemic : DIAGRAM_COLORS.contradiction,
           "stroke-width": "2",
           "stroke-dasharray": isInterSystemic ? "8,4" : "6,3",
           opacity: isInterSystemic ? "0.75" : "0.8"
@@ -1896,7 +1997,7 @@
           y: midpointY - (isInterSystemic ? 8 : 7),
           "text-anchor": "middle",
           "font-size": isInterSystemic ? "14" : "13",
-          fill: isInterSystemic ? "#7c3aed" : "#c0392b"
+          fill: isInterSystemic ? DIAGRAM_COLORS.intersystemic : DIAGRAM_COLORS.contradiction
         },
         isInterSystemic ? "↔" : "⚡"
       );
@@ -1914,10 +2015,10 @@
     if (isEnabled) {
       hideEditor();
       state.activeNodeId = null;
-      dom.hintText.textContent = "Select nodes to mark contradictions — see guidance in the Summary panel.";
+      dom.hintText.textContent = "Select components to define a contradiction. Guidance appears in the analysis record below.";
       dom.contradictionGuide.hidden = false;
     } else {
-      dom.hintText.textContent = "Click a node to edit it. Hover for guidance.";
+      dom.hintText.textContent = "Select a component to edit it. Hover for guidance.";
       dom.contradictionGuide.hidden = true;
     }
 
@@ -2050,13 +2151,26 @@
     return heading;
   }
 
-  function renderSummarySection(fragment, nodes, store, title = null) {
+  function createSummaryGroupHeading(text) {
+    const heading = document.createElement("div");
+    heading.className = "sr-group-heading";
+    heading.textContent = text;
+    return heading;
+  }
+
+  function renderSummarySection(fragment, store, title = null) {
     if (title) {
       fragment.appendChild(createSummaryHeading(title));
     }
 
-    nodes.forEach((node) => {
-      fragment.appendChild(createSummaryRow(node.short, store[node.id]));
+    SUMMARY_THEMES.forEach((theme) => {
+      fragment.appendChild(createSummaryGroupHeading(theme.title));
+      theme.nodeIds.forEach((nodeId) => {
+        const node = NODE_MAP.get(nodeId);
+        if (node) {
+          fragment.appendChild(createSummaryRow(node.short, store[nodeId]));
+        }
+      });
     });
   }
 
@@ -2064,24 +2178,22 @@
     const fragment = document.createDocumentFragment();
 
     if (state.dualMode) {
-      renderSummarySection(fragment, NODE_DEFINITIONS, state.valuesBySystem[1], "System 1");
+      renderSummarySection(fragment, state.valuesBySystem[1], "System 1");
       fragment.appendChild(createSummaryDivider());
-      renderSummarySection(fragment, NODE_DEFINITIONS, state.valuesBySystem[2], "System 2");
+      renderSummarySection(fragment, state.valuesBySystem[2], "System 2");
       fragment.appendChild(createSummaryDivider());
       fragment.appendChild(createSummaryHeading("Shared elements"));
       fragment.appendChild(createSummaryRow("Shared Object", state.sharedObject));
       fragment.appendChild(createSummaryRow("Shared Outcome(s)", state.sharedOutcome));
     } else {
-      renderSummarySection(fragment, NODE_DEFINITIONS, state.valuesBySystem[1]);
+      renderSummarySection(fragment, state.valuesBySystem[1], "Activity system");
       fragment.appendChild(createSummaryDivider());
+      fragment.appendChild(createSummaryHeading("Outcome"));
       fragment.appendChild(createSummaryRow("Outcome", state.outcome));
     }
 
     if (state.contradictions.length) {
-      const contradictionHeading = document.createElement("div");
-      contradictionHeading.className = "sr-label";
-      contradictionHeading.textContent = "Contradictions";
-      fragment.append(createSummaryDivider(), contradictionHeading);
+      fragment.append(createSummaryDivider(), createSummaryHeading("System tensions"));
 
       state.contradictions.forEach((contradiction) => {
         const firstNode = ALL_NODE_MAP.get(contradiction.nodes[0]);
@@ -2521,8 +2633,8 @@
 
   function syncModeUi() {
     dom.dualButton.setAttribute("aria-pressed", String(state.dualMode));
-    dom.dualButton.textContent = state.dualMode ? "Show one system" : "Show two systems";
-    dom.summaryHeading.textContent = state.dualMode ? "Summary — Two Systems" : "Summary";
+    dom.dualButton.textContent = state.dualMode ? "Return to one system" : "Compare two systems";
+    dom.summaryHeading.textContent = state.dualMode ? "Analysis record — Two systems" : "Analysis record";
     dom.app.classList.toggle("dual-active", state.dualMode);
   }
 
@@ -2541,7 +2653,7 @@
     hideTooltip();
     resetContradictionState();
     closeAllMenus();
-    dom.hintText.textContent = "Click a node to edit it. Hover for guidance.";
+    dom.hintText.textContent = "Select a component to edit it. Hover for guidance.";
     dom.notesInput.value = importedState.notes;
     syncModeUi();
     buildSvg();
@@ -2767,7 +2879,7 @@
     hideEditor();
     hideTooltip();
     resetContradictionState();
-    dom.hintText.textContent = "Click a node to edit it. Hover for guidance.";
+    dom.hintText.textContent = "Select a component to edit it. Hover for guidance.";
     syncModeUi();
 
     buildSvg();
