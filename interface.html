@@ -141,22 +141,60 @@
   }
 
   #right {
-    order: 2;
+    position: fixed;
+    top: 1rem;
+    right: max(1rem, calc((100vw - 1200px) / 2 + 1.25rem));
+    z-index: 25;
     display: flex;
     flex-direction: column;
     gap: 0.625rem;
-    width: 100%;
+    width: min(29rem, calc(100vw - 2rem));
     min-width: 0;
-    max-width: 100%;
+    max-width: calc(100vw - 2rem);
+    max-height: calc(100vh - 2rem);
+    overflow: hidden;
     padding: 1rem;
     border: 1px solid var(--border);
     border-radius: 10px;
-    background: var(--surface);
+    background: rgba(255, 255, 255, 0.96);
+    box-shadow: 0 14px 34px rgba(0, 0, 0, 0.08);
+    backdrop-filter: blur(8px);
   }
 
   .panel-title,
   .section-header h2 {
     margin-bottom: 0.2rem;
+  }
+
+  .floating-panel-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.75rem;
+  }
+
+  .floating-panel-title {
+    min-width: 0;
+  }
+
+  .panel-toggle-btn {
+    flex-shrink: 0;
+    padding: 0.35rem 0.65rem;
+    font-size: 0.75rem;
+  }
+
+  .floating-panel-content {
+    display: flex;
+    flex-direction: column;
+    gap: 0.625rem;
+    min-height: 0;
+    overflow-y: auto;
+    padding-right: 0.1rem;
+  }
+
+  #right.is-collapsed {
+    width: auto;
+    max-width: min(18rem, calc(100vw - 2rem));
   }
 
   .panel-intro,
@@ -265,8 +303,16 @@
     box-shadow: 0 8px 18px rgba(0, 0, 0, 0.06);
   }
 
+  .diagram-overlay-header {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    width: 100%;
+  }
+
   .diagram-overlay-controls .toolbar-group-label {
-    margin-bottom: 0.1rem;
+    margin-bottom: 0;
+    min-width: 0;
   }
 
   .diagram-overlay-actions {
@@ -279,6 +325,34 @@
 
   .diagram-overlay-controls button {
     padding: 0.4rem 0.7rem;
+  }
+
+  .diagram-overlay-toggle {
+    flex-shrink: 0;
+    min-width: 2rem;
+    padding: 0.25rem 0.45rem;
+    font-size: 0.75rem;
+    line-height: 1;
+  }
+
+  .diagram-overlay-controls.is-collapsed {
+    gap: 0;
+  }
+
+  .diagram-overlay-controls.is-collapsed .diagram-overlay-actions {
+    display: none;
+  }
+
+  .icon-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.2rem;
+    height: 2.2rem;
+    padding: 0;
+    border-radius: 999px;
+    font-weight: 700;
+    line-height: 1;
   }
 
   #left:fullscreen {
@@ -758,6 +832,20 @@
   }
 
   @media (max-width: 700px) {
+    #right {
+      position: static;
+      width: 100%;
+      max-width: 100%;
+      max-height: none;
+      box-shadow: none;
+      backdrop-filter: none;
+    }
+
+    #right.is-collapsed {
+      width: 100%;
+      max-width: 100%;
+    }
+
     #right .btn-row[role="toolbar"] {
       grid-template-columns: 1fr;
     }
@@ -804,53 +892,62 @@
 
 <main id="app">
   <aside id="right" aria-labelledby="controls-heading">
-    <h2 id="controls-heading" class="panel-title">Analysis controls</h2>
-    <p id="hint-text" aria-live="polite" class="visually-hidden"></p>
-
-    <div class="btn-row" role="toolbar" aria-label="Actions">
-      <div class="toolbar-group" role="group" aria-label="Analysis mode">
-        <span class="toolbar-group-label">Analysis mode</span>
-        <button id="dual-btn" aria-pressed="false">Compare two systems</button>
-        <button id="fullscreen-btn" aria-pressed="false">Full-screen diagram</button>
-        <button id="guidance-btn" aria-pressed="true">Guidance pop-ups: on</button>
+    <div class="floating-panel-header">
+      <div class="floating-panel-title">
+        <h2 id="controls-heading" class="panel-title">Analysis controls</h2>
+        <p id="hint-text" aria-live="polite" class="visually-hidden"></p>
       </div>
+      <button id="controls-toggle-btn" class="panel-toggle-btn" aria-expanded="true" aria-controls="controls-panel-content">
+        Collapse
+      </button>
+    </div>
 
-      <div class="toolbar-group" role="group" aria-label="Export and transfer">
-        <span class="toolbar-group-label">Export and transfer</span>
-        <button id="export-interface-btn">Export interface text</button>
-        <button id="copy-btn">Copy record and notes</button>
-        <div id="diagram-export-wrap">
-          <button
-            id="diagram-export-btn"
-            aria-haspopup="menu"
-            aria-expanded="false"
-            aria-controls="diagram-export-menu"
-          >
-            Export diagram
-          </button>
-          <div id="diagram-export-menu" role="menu" aria-label="Diagram export format" hidden>
-            <button role="menuitem" data-diagram-fmt="svg">SVG</button>
-            <button role="menuitem" data-diagram-fmt="png">PNG</button>
-          </div>
+    <div id="controls-panel-content" class="floating-panel-content">
+      <div class="btn-row" role="toolbar" aria-label="Actions">
+        <div class="toolbar-group" role="group" aria-label="Analysis mode">
+          <span class="toolbar-group-label">Analysis mode</span>
+          <button id="dual-btn" aria-pressed="false">Compare two systems</button>
+          <button id="fullscreen-btn" aria-pressed="false">Full-screen diagram</button>
+          <button id="guidance-btn" aria-pressed="true">Guidance pop-ups: on</button>
         </div>
-        <div id="export-wrap">
-          <button
-            id="export-btn"
-            aria-haspopup="menu"
-            aria-expanded="false"
-            aria-controls="export-menu"
-          >
-            Export record and notes
-          </button>
-          <div id="export-menu" role="menu" aria-label="Export format" hidden>
-            <button role="menuitem" data-fmt="text">Plain text</button>
-            <button role="menuitem" data-fmt="markdown">Markdown</button>
-            <button role="menuitem" data-fmt="json">JSON</button>
-            <button role="menuitem" data-fmt="json-template">JSON template for AI</button>
+
+        <div class="toolbar-group" role="group" aria-label="Export and transfer">
+          <span class="toolbar-group-label">Export and transfer</span>
+          <button id="export-interface-btn">Export interface text</button>
+          <button id="copy-btn">Copy record and notes</button>
+          <div id="diagram-export-wrap">
+            <button
+              id="diagram-export-btn"
+              aria-haspopup="menu"
+              aria-expanded="false"
+              aria-controls="diagram-export-menu"
+            >
+              Export diagram
+            </button>
+            <div id="diagram-export-menu" role="menu" aria-label="Diagram export format" hidden>
+              <button role="menuitem" data-diagram-fmt="svg">SVG</button>
+              <button role="menuitem" data-diagram-fmt="png">PNG</button>
+            </div>
           </div>
+          <div id="export-wrap">
+            <button
+              id="export-btn"
+              aria-haspopup="menu"
+              aria-expanded="false"
+              aria-controls="export-menu"
+            >
+              Export record and notes
+            </button>
+            <div id="export-menu" role="menu" aria-label="Export format" hidden>
+              <button role="menuitem" data-fmt="text">Plain text</button>
+              <button role="menuitem" data-fmt="markdown">Markdown</button>
+              <button role="menuitem" data-fmt="json">JSON</button>
+              <button role="menuitem" data-fmt="json-template">JSON template for AI</button>
+            </div>
+          </div>
+          <button id="import-json-btn">Import JSON</button>
+          <input id="import-json-input" class="visually-hidden" type="file" accept=".json,application/json">
         </div>
-        <button id="import-json-btn">Import JSON</button>
-        <input id="import-json-input" class="visually-hidden" type="file" accept=".json,application/json">
       </div>
     </div>
   </aside>
@@ -865,17 +962,32 @@
     </p>
 
     <div id="svg-wrap">
-      <div class="diagram-overlay-controls" role="group" aria-label="Contradiction mapping">
-        <span class="toolbar-group-label">Contradiction mapping</span>
-        <div class="diagram-overlay-actions">
+      <div class="diagram-overlay-controls" role="group" aria-label="Contradiction(s)">
+        <div class="diagram-overlay-header">
+          <span class="toolbar-group-label">Contradiction(s)</span>
+          <button
+            id="contra-panel-toggle-btn"
+            class="diagram-overlay-toggle"
+            aria-expanded="false"
+            aria-controls="contra-overlay-actions"
+            aria-label="Expand contradiction(s)"
+            title="Expand contradiction(s)"
+          >
+            +
+          </button>
+        </div>
+        <div id="contra-overlay-actions" class="diagram-overlay-actions">
           <button id="contra-btn" aria-pressed="false">Map a contradiction</button>
           <button
             id="contra-info-btn"
+            class="icon-button"
             aria-haspopup="dialog"
             aria-expanded="false"
             aria-controls="contra-guide-overlay"
+            aria-label="Open contradiction guidance"
+            title="Open contradiction guidance"
           >
-            Info
+            ?
           </button>
         </div>
       </div>
@@ -1217,6 +1329,8 @@
     contradictionFirstNodeId: null,
     contradictionPromptNodes: null,
     diagramGuidanceEnabled: true,
+    contradictionOverlayCollapsed: true,
+    controlsPanelCollapsed: false,
     copyResetTimerId: null,
     announceTimerId: null,
     contradictionGuideDialogOpener: null,
@@ -1242,6 +1356,12 @@
     leftSection: document.getElementById("left"),
     svg: document.getElementById("tri"),
     svgWrap: document.getElementById("svg-wrap"),
+    contradictionOverlay: document.querySelector(".diagram-overlay-controls"),
+    contradictionOverlayActions: document.getElementById("contra-overlay-actions"),
+    contradictionOverlayToggleButton: document.getElementById("contra-panel-toggle-btn"),
+    controlsPanel: document.getElementById("right"),
+    controlsPanelContent: document.getElementById("controls-panel-content"),
+    controlsToggleButton: document.getElementById("controls-toggle-btn"),
     tooltip: document.getElementById("tooltip"),
     liveRegion: document.getElementById("live-region"),
     hintText: document.getElementById("hint-text"),
@@ -1575,6 +1695,27 @@
 
   function syncContradictionGuideUi() {
     dom.intersystemGuideRow.hidden = !state.dualMode;
+  }
+
+  function syncContradictionOverlayUi() {
+    dom.contradictionOverlay.classList.toggle("is-collapsed", state.contradictionOverlayCollapsed);
+    dom.contradictionOverlayActions.hidden = state.contradictionOverlayCollapsed;
+    dom.contradictionOverlayToggleButton.setAttribute("aria-expanded", String(!state.contradictionOverlayCollapsed));
+    dom.contradictionOverlayToggleButton.setAttribute(
+      "aria-label",
+      state.contradictionOverlayCollapsed ? "Expand contradiction(s)" : "Collapse contradiction(s)"
+    );
+    dom.contradictionOverlayToggleButton.title = state.contradictionOverlayCollapsed
+      ? "Expand contradiction(s)"
+      : "Collapse contradiction(s)";
+    dom.contradictionOverlayToggleButton.textContent = state.contradictionOverlayCollapsed ? "+" : "-";
+  }
+
+  function syncControlsPanelUi() {
+    dom.controlsPanel.classList.toggle("is-collapsed", state.controlsPanelCollapsed);
+    dom.controlsPanelContent.hidden = state.controlsPanelCollapsed;
+    dom.controlsToggleButton.setAttribute("aria-expanded", String(!state.controlsPanelCollapsed));
+    dom.controlsToggleButton.textContent = state.controlsPanelCollapsed ? "Expand" : "Collapse";
   }
 
   function announce(message) {
@@ -3463,6 +3604,19 @@
   }
 
   function bindEvents() {
+    dom.contradictionOverlayToggleButton.addEventListener("click", () => {
+      state.contradictionOverlayCollapsed = !state.contradictionOverlayCollapsed;
+      syncContradictionOverlayUi();
+    });
+
+    dom.controlsToggleButton.addEventListener("click", () => {
+      state.controlsPanelCollapsed = !state.controlsPanelCollapsed;
+      if (state.controlsPanelCollapsed) {
+        closeAllMenus();
+      }
+      syncControlsPanelUi();
+    });
+
     dom.contradictionButton.addEventListener("click", () => {
       setContradictionMode(!state.contradictionMode);
     });
@@ -3670,6 +3824,8 @@
 
   function init() {
     bindEvents();
+    syncContradictionOverlayUi();
+    syncControlsPanelUi();
     syncGuidanceUi();
     syncModeUi();
     buildSvg();
