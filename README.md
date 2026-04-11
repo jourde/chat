@@ -1,99 +1,135 @@
 # Activity System Analyser based on cultural-historical activity theory (CHAT)
 
-An interactive, browser-based tool for analysing human activity using Engeström's Activity System model, grounded in cultural-historical activity theory (CHAT).
+An interactive single-page application for analysing human activity with Engeström's Activity System model in cultural-historical activity theory (CHAT).
 
 **Live demo:** [https://jourde.github.io/chat/interface.html](https://jourde.github.io/chat/interface.html)
 
---
+## Overview
 
-## What it does
-
-The tool lets you map and analyse an activity system by filling in six interconnected components:
+The tool lets you describe an activity system by filling in six connected components:
 
 | Component | Description |
-|---|---|
-| **Mediating artefacts (tools and signs)** | Technologies, symbols or language used to accomplish the activity |
+| --- | --- |
+| **Mediating artefacts (tools and signs)** | Technologies, symbols, or language used to carry out the activity |
 | **Subject** | The person or group whose perspective is being analysed |
-| **Object (motive-bearing)** | The raw material or problem space being transformed through the activity; embeds the activity's motive |
-| **Rules** | Norms, conventions and regulations that constrain or guide the activity |
-| **Community** | The collective in which the subject operates and which co-orients toward the same object |
-| **Division of Labour** | How tasks, roles and power are distributed |
+| **Object (motive-bearing)** | What the activity is directed at and works to transform; the object embeds the motive |
+| **Rules** | Norms, conventions, and regulations that shape the activity |
+| **Community** | The collective that shares or co-orients toward the same object |
+| **Division of Labour** | How tasks, roles, and power are distributed |
 
-You can also identify **contradictions** at three levels — tensions within a component, between components of the same system, or across two systems — and export the full analysis.
-
----
+The application also supports contradiction mapping, summary generation, JSON-based data portability, and diagram export.
 
 ## Features
 
-- **Interactive SVG diagram** — click any node to open a guided editor with prompts for each component
-- **Two-system view** — toggle between a single activity system and a dual-system view showing two systems alongside a Shared Object and Shared Outcome(s), following Engeström's third-generation CHAT framework
-- **Three levels of contradiction tracking** — with visual indicators on the diagram:
-  - ⚡ **Primary** — a tension within a single component (e.g. a tool that is both required and unusable)
-  - ⚡ **Secondary** — a tension between two components within the same system (e.g. Rules clashing with the Object)
-  - ↔ **Inter-systemic** — a tension between the two activity systems (dual-system view only)
-- **Live summary panel** — real-time display of all component values and contradictions as you type
-- **Additional notes** — free-text field for observations and reflections
-- **Export** — download the full analysis as plain text, Markdown, or JSON
-- **Copy to clipboard** — one-click copy of the summary and notes
-- **Accessible** — full keyboard navigation, ARIA labels, screen-reader live announcements, WCAG 2.1 AA focus indicators
+- Interactive SVG diagram with guided editing for each node
+- Single-system and dual-system analysis modes
+- Shared Object and Shared Outcome(s) editing in dual-system mode
+- Contradiction mapping with visual overlays:
+  - `Primary` contradiction within one component
+  - `Secondary` contradiction between two components in the same system
+  - `Inter-systemic` contradiction between two systems
+- Live summary panel that updates as you type
+- Additional notes area
+- Summary export as plain text, Markdown, or JSON
+- JSON import using the app's export schema
+- Diagram export as `SVG` or `PNG`
+- Standalone export of interface copy for UI review
+- Clipboard copy for summary and notes
+- Keyboard-accessible controls, menus, and dialogs
 
----
+## Interface
 
-## Theoretical background
+The action bar is organised into three groups:
 
-This tool is based on **Engeström's Activity System** (1987, 2001), a model from cultural-historical activity theory (CHAT) for analysing complex human activities as systems. The six components and their relationships make visible the structural tensions — contradictions — that drive development and change within an activity.
-
-The **two-system view** implements the third-generation CHAT framework, which places two activity systems in dialogue around a shared object, enabling analysis of inter-organisational and boundary-crossing activity.
-
-**Contradictions** are central to CHAT analysis. The tool supports three levels:
-
-| Level | Label | Description |
-|---|---|---|
-| Level 1 | Primary | Tension within a single component |
-| Level 2 | Secondary | Tension between two components of the same system |
-| Level 3 | Tertiary | Tension between the current form of an activity and a more advanced form *(not modelled in this tool)* |
-| Level 4 | Inter-systemic | Tension between two activity systems |
-
-**Key references:**
-- Engeström, Y. (1987). *Learning by expanding: An activity-theoretical approach to developmental research.* Orienta-Konsultit.
-- Engeström, Y. (2001). Expansive learning at work: Toward an activity theoretical reconceptualization. *Journal of Education and Work, 14*(1), 133–156.
-
----
+- `View`
+  - `Show two systems` toggles between one-system and two-system analysis
+- `Contradictions`
+  - `⚡ Add a contradiction` switches the diagram into contradiction-selection mode
+- `Export`
+  - `Export UI Content for Review`
+  - `Copy summary and notes`
+  - `Export diagram` → `SVG` or `PNG`
+  - `Export summary and notes` → `Plain text`, `Markdown`, or `JSON`
+  - `Import JSON`
 
 ## Usage
 
-No installation or build step required. The tool is a single self-contained HTML file.
+No build step or dependency installation is required.
 
-1. Download `Engeström_Activity_System_Analyser.html`
-2. Open it in any modern browser
-3. Click a node on the triangle to begin filling in your activity system
-4. Use **⚡ Add a contradiction** to mark tensions:
-   - Click the **same node twice** for a primary contradiction
-   - Click **two different nodes in the same system** for a secondary contradiction
-5. Export or copy your analysis when done
+1. Open `Engeström_Activity_System_Analyser.html` in a modern browser.
+2. Click a node in the diagram to edit it.
+3. Fill in the six components of the activity system.
+4. Optionally add notes in the summary panel.
+5. Export, copy, or import data as needed.
 
-To use the two-system view:
+### Contradictions
 
-1. Click **Show two systems**
-2. Click nodes in either triangle to edit System 1 or System 2 independently
-3. Click the **Shared Object** box and **Shared Outcome(s)** label in the centre to describe what connects both systems
-4. In contradiction mode, click **one node in System 1 and one in System 2** to mark an inter-systemic contradiction
+To record contradictions:
 
----
+1. Click `⚡ Add a contradiction`.
+2. Choose nodes in the diagram:
+   - Click the same node twice for a `Primary` contradiction.
+   - Click two different nodes in the same system for a `Secondary` contradiction.
+   - In dual-system mode, click one node in each system for an `Inter-systemic` contradiction.
+3. Enter the contradiction description and save it.
+
+### Dual-system mode
+
+To analyse two interacting activity systems:
+
+1. Click `Show two systems`.
+2. Fill in nodes in `System 1` and `System 2`.
+3. Click the central `Shared Object` and `Shared Outcome(s)` controls to describe what connects both systems.
+4. Use contradiction mode to capture within-system and across-system tensions.
+
+### Import and export
+
+- Use `Export summary and notes` to download the current analysis as:
+  - plain text
+  - Markdown
+  - JSON
+- Use `Import JSON` to restore a previous analysis from the app's JSON export format
+- Use `Export diagram` to download the current diagram as:
+  - `SVG`
+  - `PNG`
+- Use `Export UI Content for Review` to export the interface text and prompts used in the application
+
+## Accessibility
+
+The SPA is designed for keyboard and assistive-technology use:
+
+- interactive SVG nodes are keyboard focusable
+- controls expose ARIA labels and menu semantics where needed
+- live announcements are sent to a polite screen-reader region
+- focus is managed for menus and the legal dialog
+- visible focus indicators are provided throughout the interface
 
 ## Privacy
 
-All data is processed entirely in your browser. Nothing is transmitted to any server. The tool has no external dependencies and makes no network requests after the initial page load.
+The application runs entirely client-side in the browser.
 
----
+- no user data is sent to a server by the application
+- no framework or external runtime is required
+- exports and imports operate locally on the user's device
 
 ## Browser support
 
-Any modern browser (Chrome, Firefox, Safari, Edge). No polyfills or transpilation required.
+Current versions of major modern browsers are supported, including:
 
----
+- Chrome
+- Firefox
+- Safari
+- Edge
+
+## Theoretical background
+
+This tool is based on Engeström's Activity System framework and third-generation CHAT for analysing complex human activities, shared objects, and systemic tensions.
+
+**Key references**
+
+- Engeström, Y. (1987). *Learning by expanding: An activity-theoretical approach to developmental research.* Orienta-Konsultit.
+- Engeström, Y. (2001). Expansive learning at work: Toward an activity theoretical reconceptualization. *Journal of Education and Work, 14*(1), 133–156.
 
 ## Licence
 
 MIT Licence — François Jourde (2026)
-
