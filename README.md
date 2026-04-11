@@ -90,7 +90,7 @@ To analyse two interacting activity systems:
   - Markdown
   - JSON
 - Use `Export record` → `JSON template for AI` to download a blank import template with node labels, guidance, and prompts
-- Give that template plus a source text to ChatGPT and ask it to preserve all keys while filling the `value` fields and other text fields
+- Give that template plus a source text to a conversational agen (generative AI) and ask it to preserve all keys while filling the `value` fields and other text fields
 - Use `Import JSON` to restore a previous analysis from the app's JSON export format
 - The importer validates that every required node entry is still present, so renamed or removed node identifiers are rejected
 - Use `Export diagram` to download the current diagram as:
