@@ -247,6 +247,30 @@
     aspect-ratio: 1260 / 430;
   }
 
+  #left:fullscreen {
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr) auto auto;
+    gap: 1rem;
+    width: 100vw;
+    height: 100vh;
+    max-width: none;
+    padding: 1.5rem;
+    background: var(--page-bg);
+  }
+
+  #left:fullscreen #svg-wrap {
+    height: 100%;
+    min-height: 0;
+    aspect-ratio: auto;
+  }
+
+  #left:fullscreen svg {
+    width: 100%;
+    height: 100%;
+    max-width: min(96vw, 1680px);
+    max-height: 100%;
+  }
+
   svg {
     display: block;
     width: 100%;
@@ -711,6 +735,7 @@
       <div class="toolbar-group" role="group" aria-label="Analysis mode">
         <span class="toolbar-group-label">Analysis mode</span>
         <button id="dual-btn" aria-pressed="false">Compare two systems</button>
+        <button id="fullscreen-btn" aria-pressed="false">Full-screen diagram</button>
       </div>
 
       <div class="toolbar-group" role="group" aria-label="Contradiction mapping">
@@ -1104,6 +1129,7 @@
 
   const dom = {
     app: document.getElementById("app"),
+    leftSection: document.getElementById("left"),
     svg: document.getElementById("tri"),
     svgWrap: document.getElementById("svg-wrap"),
     tooltip: document.getElementById("tooltip"),
@@ -1137,6 +1163,7 @@
     exportMenu: document.getElementById("export-menu"),
     exportWrap: document.getElementById("export-wrap"),
     dualButton: document.getElementById("dual-btn"),
+    fullscreenButton: document.getElementById("fullscreen-btn"),
     legalButton: document.getElementById("legal-btn"),
     legalOverlay: document.getElementById("legal-overlay"),
     legalBox: document.getElementById("legal-box"),
@@ -2638,6 +2665,32 @@
     dom.app.classList.toggle("dual-active", state.dualMode);
   }
 
+  function isDiagramFullscreen() {
+    return document.fullscreenElement === dom.leftSection;
+  }
+
+  function syncFullscreenUi() {
+    const isFullscreen = isDiagramFullscreen();
+    dom.fullscreenButton.setAttribute("aria-pressed", String(isFullscreen));
+    dom.fullscreenButton.textContent = isFullscreen ? "Exit full screen" : "Full-screen diagram";
+  }
+
+  async function toggleDiagramFullscreen() {
+    try {
+      if (isDiagramFullscreen()) {
+        await document.exitFullscreen();
+      } else {
+        await dom.leftSection.requestFullscreen();
+      }
+    } catch (error) {
+      announce("Unable to change full-screen mode.");
+      syncFullscreenUi();
+      return;
+    }
+
+    announce(isDiagramFullscreen() ? "Diagram shown in full-screen mode." : "Full-screen mode closed.");
+  }
+
   function applyImportedState(importedState) {
     state.dualMode = importedState.dualMode;
     state.valuesBySystem[1] = importedState.system1;
@@ -2894,6 +2947,9 @@
 
     dom.contradictionCancelButton.addEventListener("click", cancelContradictionPrompt);
     dom.dualButton.addEventListener("click", toggleDualMode);
+    dom.fullscreenButton.addEventListener("click", () => {
+      void toggleDiagramFullscreen();
+    });
 
     dom.copyButton.addEventListener("click", async () => {
       try {
@@ -3061,6 +3117,8 @@
       }
     });
 
+    document.addEventListener("fullscreenchange", syncFullscreenUi);
+
     dom.legalButton.addEventListener("click", openLegalDialog);
     dom.legalCloseButton.addEventListener("click", closeLegalDialog);
     dom.legalOverlay.addEventListener("click", (event) => {
@@ -3074,6 +3132,7 @@
     bindEvents();
     buildSvg();
     updateSummary();
+    syncFullscreenUi();
   }
 
   init();
