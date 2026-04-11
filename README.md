@@ -89,8 +89,7 @@ To analyse two interacting activity systems:
   - plain text
   - Markdown
   - JSON
-- Use `Export record` → `JSON template for AI` to download a blank import template with node labels, guidance, and prompts
-- Give that template plus a source text to a conversational agen (generative AI) and ask it to preserve all keys while filling the `value` fields and other text fields
+- Use `Export record` → `JSON template for AI` to download a blank import template with node labels, guidance, and prompts. Give that template plus a source text to a conversational agen (generative AI) and ask it to preserve all keys while filling the `value` fields and other text fields. Please see the prompt template below.
 - Use `Import JSON` to restore a previous analysis from the app's JSON export format
 - The importer validates that every required node entry is still present, so renamed or removed node identifiers are rejected
 - Use `Export diagram` to download the current diagram as:
@@ -105,7 +104,7 @@ The SPA is designed for keyboard and assistive-technology use:
 - interactive SVG nodes are keyboard focusable
 - controls expose ARIA labels and menu semantics where needed
 - live announcements are sent to a polite screen-reader region
-- focus is managed for menus and the legal dialog
+- focus is managed for menus and the legal dialogue
 - visible focus indicators are provided throughout the interface
 
 ## Privacy
@@ -132,7 +131,40 @@ This tool is based on Engeström's Activity System framework and third-generatio
 **Key references**
 
 - Engeström, Y. (1987). *Learning by expanding: An activity-theoretical approach to developmental research.* Orienta-Konsultit.
-- Engeström, Y. (2001). Expansive learning at work: Toward an activity theoretical reconceptualization. *Journal of Education and Work, 14*(1), 133–156.
+- Engeström, Y. (2001). Expansive learning at work: Toward an activity theoretical reconceptualisation. *Journal of Education and Work, 14*(1), 133–156.
+
+## Prompt template
+```
+I will give you two things:
+
+1. A source text document
+2. A JSON template that must stay structurally valid for import into an interface
+
+Your task is to fill in the JSON based only on the source text.
+
+Rules:
+- Return valid JSON only.
+- Do not add any text before or after the JSON.
+- Preserve the exact JSON structure and all existing keys.
+- Do not rename, remove, or reorder keys unless strictly necessary to keep valid JSON.
+- Keep every `id` value exactly as provided.
+- Fill only text fields such as `value`, `outcome`, `sharedObject`, `sharedOutcome`, `description`, and `notes`.
+- Leave fields empty (`""`) if the source text does not provide enough information.
+- Leave contradiction arrays empty unless the source text explicitly describes contradictions or tensions that clearly belong there.
+- Do not invent information.
+- Be concise but specific.
+- Base every filled field strictly on the source text.
+
+How to fill the nodes:
+- Use each node’s `label`, `guidance`, and `prompt` to decide what belongs in its `value`.
+- Summarise the relevant content from the source text into clear analytical wording.
+- If the template is for two systems, keep System 1 and System 2 distinct unless the text clearly describes shared elements. Put shared elements only in `sharedObject` and `sharedOutcome`.
+
+Now wait for my next message containing:
+- SOURCE TEXT
+- JSON TEMPLATE
+
+```
 
 ## Licence
 
