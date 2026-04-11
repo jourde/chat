@@ -435,12 +435,14 @@
     pointer-events: none;
   }
 
-  #export-wrap {
+  #export-wrap,
+  #diagram-export-wrap {
     position: relative;
     display: inline-block;
   }
 
-  #export-menu {
+  #export-menu,
+  #diagram-export-menu {
     position: absolute;
     top: calc(100% + 6px);
     left: 0;
@@ -453,7 +455,8 @@
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
   }
 
-  #export-menu button {
+  #export-menu button,
+  #diagram-export-menu button {
     display: block;
     width: 100%;
     padding: 8px 14px;
@@ -464,11 +467,13 @@
     text-align: left;
   }
 
-  #export-menu button:hover {
+  #export-menu button:hover,
+  #diagram-export-menu button:hover {
     background: var(--surface-control);
   }
 
-  #export-menu button:focus-visible {
+  #export-menu button:focus-visible,
+  #diagram-export-menu button:focus-visible {
     outline-offset: -3px;
   }
 
@@ -640,6 +645,20 @@
         <span class="toolbar-group-label">Export</span>
         <button id="export-interface-btn">Export UI Content for Review</button>
         <button id="copy-btn">Copy summary and notes</button>
+        <div id="diagram-export-wrap">
+          <button
+            id="diagram-export-btn"
+            aria-haspopup="menu"
+            aria-expanded="false"
+            aria-controls="diagram-export-menu"
+          >
+            Export diagram ↓
+          </button>
+          <div id="diagram-export-menu" role="menu" aria-label="Diagram export format" hidden>
+            <button role="menuitem" data-diagram-fmt="svg">SVG</button>
+            <button role="menuitem" data-diagram-fmt="png">PNG</button>
+          </div>
+        </div>
         <div id="export-wrap">
           <button
             id="export-btn"
@@ -655,6 +674,8 @@
             <button role="menuitem" data-fmt="json">JSON</button>
           </div>
         </div>
+        <button id="import-json-btn">Import JSON</button>
+        <input id="import-json-input" class="visually-hidden" type="file" accept=".json,application/json">
       </div>
     </div>
   </aside>
@@ -1005,6 +1026,11 @@
     summaryHeading: document.getElementById("summary-heading"),
     notesInput: document.getElementById("notes-input"),
     copyButton: document.getElementById("copy-btn"),
+    importJsonButton: document.getElementById("import-json-btn"),
+    importJsonInput: document.getElementById("import-json-input"),
+    diagramExportButton: document.getElementById("diagram-export-btn"),
+    diagramExportMenu: document.getElementById("diagram-export-menu"),
+    diagramExportWrap: document.getElementById("diagram-export-wrap"),
     exportInterfaceButton: document.getElementById("export-interface-btn"),
     exportButton: document.getElementById("export-btn"),
     exportMenu: document.getElementById("export-menu"),
@@ -2287,6 +2313,252 @@
     return JSON.stringify(buildExportData(), null, 2);
   }
 
+  function getDiagramDimensions() {
+    return {
+      width: state.dualMode ? FULL_VIEWBOX_WIDTH : GEOMETRY.width,
+      height: GEOMETRY.height
+    };
+  }
+
+  function createDiagramSvgMarkup() {
+    const { width, height } = getDiagramDimensions();
+    const svgClone = dom.svg.cloneNode(true);
+    const background = document.createElementNS(SVG_NS, "rect");
+    background.setAttribute("x", "0");
+    background.setAttribute("y", "0");
+    background.setAttribute("width", String(width));
+    background.setAttribute("height", String(height));
+    background.setAttribute("fill", "#ffffff");
+    svgClone.insertBefore(background, svgClone.firstChild);
+    svgClone.setAttribute("xmlns", SVG_NS);
+    svgClone.setAttribute("xmlns:xlink", "http://www.w3.org/1999/xlink");
+    svgClone.setAttribute("width", String(width));
+    svgClone.setAttribute("height", String(height));
+    return new XMLSerializer().serializeToString(svgClone);
+  }
+
+  function downloadDiagramAsSvg() {
+    downloadFile(
+      createDiagramSvgMarkup(),
+      "activity-system-diagram.svg",
+      "image/svg+xml;charset=utf-8"
+    );
+  }
+
+  function loadImage(source) {
+    return new Promise((resolve, reject) => {
+      const image = new Image();
+      image.onload = () => resolve(image);
+      image.onerror = () => reject(new Error("Unable to render the diagram as an image."));
+      image.src = source;
+    });
+  }
+
+  async function downloadDiagramAsPng() {
+    const { width, height } = getDiagramDimensions();
+    const svgMarkup = createDiagramSvgMarkup();
+    const svgBlob = new Blob([svgMarkup], { type: "image/svg+xml;charset=utf-8" });
+    const objectUrl = URL.createObjectURL(svgBlob);
+
+    try {
+      const image = await loadImage(objectUrl);
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+      const context = canvas.getContext("2d");
+
+      if (!context) {
+        throw new Error("Unable to prepare the PNG export.");
+      }
+
+      context.fillStyle = "#ffffff";
+      context.fillRect(0, 0, width, height);
+      context.drawImage(image, 0, 0, width, height);
+
+      const pngUrl = canvas.toDataURL("image/png");
+      const link = document.createElement("a");
+      link.href = pngUrl;
+      link.download = "activity-system-diagram.png";
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } finally {
+      URL.revokeObjectURL(objectUrl);
+    }
+  }
+
+  function isPlainObject(value) {
+    return typeof value === "object" && value !== null && !Array.isArray(value);
+  }
+
+  function toTextValue(value) {
+    return typeof value === "string" ? value : "";
+  }
+
+  function getEmptyImportState() {
+    return {
+      system1: createEmptyNodeValues(),
+      system2: createEmptyNodeValues(),
+      contradictions: [],
+      dualMode: false,
+      outcome: "",
+      sharedObject: "",
+      sharedOutcome: "",
+      notes: ""
+    };
+  }
+
+  function readImportedNodeValues(nodes) {
+    const values = createEmptyNodeValues();
+    if (!Array.isArray(nodes)) {
+      return values;
+    }
+
+    nodes.forEach((node) => {
+      if (!isPlainObject(node) || !NODE_MAP.has(node.id)) {
+        return;
+      }
+
+      values[node.id] = toTextValue(node.value);
+    });
+
+    return values;
+  }
+
+  function parseImportedNodeReference(reference, fallbackSystem) {
+    if (typeof reference !== "string") {
+      return null;
+    }
+
+    const match = reference.trim().match(/^(.*?)(?: \(System ([12])\))?$/);
+    if (!match) {
+      return null;
+    }
+
+    const [, shortLabel, explicitSystem] = match;
+    const nodeDefinition = NODE_DEFINITIONS.find((node) => node.short === shortLabel.trim());
+    if (!nodeDefinition) {
+      return null;
+    }
+
+    const system = explicitSystem ? Number(explicitSystem) : fallbackSystem;
+    if (system !== 1 && system !== 2) {
+      return null;
+    }
+
+    return system === 2 ? `${nodeDefinition.id}_2` : nodeDefinition.id;
+  }
+
+  function parseImportedContradictions(contradictions, fallbackSystem) {
+    if (!Array.isArray(contradictions)) {
+      return [];
+    }
+
+    return contradictions.reduce((result, contradiction) => {
+      if (!isPlainObject(contradiction) || !Array.isArray(contradiction.nodes)) {
+        return result;
+      }
+
+      const type = contradiction.type;
+      const validType =
+        type === "primary" ||
+        type === "secondary" ||
+        type === "intersystemic";
+
+      if (!validType) {
+        return result;
+      }
+
+      const nodeIds = contradiction.nodes
+        .map((nodeReference) => parseImportedNodeReference(nodeReference, fallbackSystem))
+        .filter(Boolean);
+
+      const expectedLength = type === "primary" ? 1 : 2;
+      if (nodeIds.length !== expectedLength) {
+        return result;
+      }
+
+      result.push({
+        type,
+        nodes: nodeIds,
+        description: toTextValue(contradiction.description)
+      });
+      return result;
+    }, []);
+  }
+
+  function parseImportedData(data) {
+    if (!isPlainObject(data)) {
+      throw new Error("The selected file does not contain a valid JSON object.");
+    }
+
+    const importedState = getEmptyImportState();
+    importedState.notes = toTextValue(data.notes);
+
+    if (Array.isArray(data.nodes)) {
+      importedState.system1 = readImportedNodeValues(data.nodes);
+      importedState.outcome = toTextValue(data.outcome);
+      importedState.contradictions = parseImportedContradictions(data.contradictions, 1);
+      return importedState;
+    }
+
+    if (isPlainObject(data.system1) && isPlainObject(data.system2)) {
+      importedState.dualMode = true;
+      importedState.system1 = readImportedNodeValues(data.system1.nodes);
+      importedState.system2 = readImportedNodeValues(data.system2.nodes);
+      importedState.sharedObject = toTextValue(data.sharedObject);
+      importedState.sharedOutcome = toTextValue(data.sharedOutcome);
+      importedState.contradictions = [
+        ...parseImportedContradictions(data.system1.contradictions, 1),
+        ...parseImportedContradictions(data.system2.contradictions, 2),
+        ...parseImportedContradictions(data.intersystemicContradictions, null)
+      ];
+      return importedState;
+    }
+
+    throw new Error("The JSON format is not supported by this importer.");
+  }
+
+  function syncModeUi() {
+    dom.dualButton.setAttribute("aria-pressed", String(state.dualMode));
+    dom.dualButton.textContent = state.dualMode ? "Show one system" : "Show two systems";
+    dom.summaryHeading.textContent = state.dualMode ? "Summary — Two Systems" : "Summary";
+    dom.app.classList.toggle("dual-active", state.dualMode);
+  }
+
+  function applyImportedState(importedState) {
+    state.dualMode = importedState.dualMode;
+    state.valuesBySystem[1] = importedState.system1;
+    state.valuesBySystem[2] = importedState.system2;
+    state.outcome = importedState.outcome;
+    state.sharedObject = importedState.sharedObject;
+    state.sharedOutcome = importedState.sharedOutcome;
+    state.contradictions = importedState.contradictions;
+    state.activeNodeId = null;
+    state.activeSystem = 1;
+
+    hideEditor();
+    hideTooltip();
+    resetContradictionState();
+    closeAllMenus();
+    dom.hintText.textContent = "Click a node to edit it. Hover for guidance.";
+    dom.notesInput.value = importedState.notes;
+    syncModeUi();
+    buildSvg();
+    updateSummary();
+  }
+
+  async function importJsonFile(file) {
+    if (!(file instanceof File)) {
+      return;
+    }
+
+    const fileText = await file.text();
+    const importedData = parseImportedData(JSON.parse(fileText));
+    applyImportedState(importedData);
+    announce("JSON import completed.");
+  }
+
   function exportInterfaceMarkdown() {
     const lines = [
       "# Activity System Analyser — Interface Content",
@@ -2390,25 +2662,38 @@
     temporaryTextarea.remove();
   }
 
-  function getExportMenuItems() {
-    return Array.from(dom.exportMenu.querySelectorAll("[role='menuitem']"));
+  function getMenuItems(menu) {
+    return Array.from(menu.querySelectorAll("[role='menuitem']"));
   }
 
-  function setExportMenuOpen(isOpen, options = {}) {
+  function setMenuOpen(button, menu, isOpen, options = {}) {
     const { focusFirstItem = false, restoreFocus = false } = options;
-    dom.exportButton.setAttribute("aria-expanded", String(isOpen));
-    dom.exportMenu.hidden = !isOpen;
+    button.setAttribute("aria-expanded", String(isOpen));
+    menu.hidden = !isOpen;
 
     if (isOpen && focusFirstItem) {
-      const [firstItem] = getExportMenuItems();
+      const [firstItem] = getMenuItems(menu);
       if (firstItem) {
         firstItem.focus();
       }
     }
 
     if (!isOpen && restoreFocus) {
-      dom.exportButton.focus();
+      button.focus();
     }
+  }
+
+  function setExportMenuOpen(isOpen, options = {}) {
+    setMenuOpen(dom.exportButton, dom.exportMenu, isOpen, options);
+  }
+
+  function setDiagramExportMenuOpen(isOpen, options = {}) {
+    setMenuOpen(dom.diagramExportButton, dom.diagramExportMenu, isOpen, options);
+  }
+
+  function closeAllMenus() {
+    setExportMenuOpen(false);
+    setDiagramExportMenuOpen(false);
   }
 
   function getFocusableElements(container) {
@@ -2483,11 +2768,7 @@
     hideTooltip();
     resetContradictionState();
     dom.hintText.textContent = "Click a node to edit it. Hover for guidance.";
-
-    dom.dualButton.setAttribute("aria-pressed", String(state.dualMode));
-    dom.dualButton.textContent = state.dualMode ? "Show one system" : "Show two systems";
-    dom.summaryHeading.textContent = state.dualMode ? "Summary — Two Systems" : "Summary";
-    dom.app.classList.toggle("dual-active", state.dualMode);
+    syncModeUi();
 
     buildSvg();
     updateSummary();
@@ -2516,13 +2797,89 @@
       }
     });
 
+    dom.importJsonButton.addEventListener("click", () => {
+      dom.importJsonInput.click();
+    });
+
+    dom.importJsonInput.addEventListener("change", async (event) => {
+      const [file] = event.target.files || [];
+
+      try {
+        await importJsonFile(file);
+      } catch (error) {
+        announce(error instanceof Error ? error.message : "Unable to import the selected JSON file.");
+      } finally {
+        event.target.value = "";
+      }
+    });
+
     dom.exportInterfaceButton.addEventListener("click", () => {
       downloadFile(exportInterfaceMarkdown(), "export-interface-raw-content.md", "text/markdown");
+    });
+
+    dom.diagramExportButton.addEventListener("click", (event) => {
+      event.stopPropagation();
+      const isExpanded = dom.diagramExportButton.getAttribute("aria-expanded") === "true";
+      setExportMenuOpen(false);
+      setDiagramExportMenuOpen(!isExpanded, { focusFirstItem: !isExpanded });
+    });
+
+    dom.diagramExportMenu.addEventListener("click", async (event) => {
+      const format = event.target.dataset.diagramFmt;
+      if (!format) {
+        return;
+      }
+
+      try {
+        if (format === "svg") {
+          downloadDiagramAsSvg();
+        } else if (format === "png") {
+          await downloadDiagramAsPng();
+        }
+      } catch (error) {
+        announce(error instanceof Error ? error.message : "Unable to export the diagram.");
+      }
+
+      setDiagramExportMenuOpen(false, { restoreFocus: true });
+    });
+
+    dom.diagramExportMenu.addEventListener("keydown", (event) => {
+      const items = getMenuItems(dom.diagramExportMenu);
+      const currentIndex = items.indexOf(document.activeElement);
+
+      if (event.key === "Escape") {
+        setDiagramExportMenuOpen(false, { restoreFocus: true });
+        return;
+      }
+
+      if (event.key === "ArrowDown") {
+        event.preventDefault();
+        items[(currentIndex + 1) % items.length].focus();
+        return;
+      }
+
+      if (event.key === "ArrowUp") {
+        event.preventDefault();
+        items[(currentIndex - 1 + items.length) % items.length].focus();
+        return;
+      }
+
+      if (event.key === "Home") {
+        event.preventDefault();
+        items[0].focus();
+        return;
+      }
+
+      if (event.key === "End") {
+        event.preventDefault();
+        items[items.length - 1].focus();
+      }
     });
 
     dom.exportButton.addEventListener("click", (event) => {
       event.stopPropagation();
       const isExpanded = dom.exportButton.getAttribute("aria-expanded") === "true";
+      setDiagramExportMenuOpen(false);
       setExportMenuOpen(!isExpanded, { focusFirstItem: !isExpanded });
     });
 
@@ -2544,7 +2901,7 @@
     });
 
     dom.exportMenu.addEventListener("keydown", (event) => {
-      const items = getExportMenuItems();
+      const items = getMenuItems(dom.exportMenu);
       const currentIndex = items.indexOf(document.activeElement);
 
       if (event.key === "Escape") {
@@ -2580,11 +2937,15 @@
       if (!dom.exportWrap.contains(event.target)) {
         setExportMenuOpen(false);
       }
+
+      if (!dom.diagramExportWrap.contains(event.target)) {
+        setDiagramExportMenuOpen(false);
+      }
     });
 
     document.addEventListener("keydown", (event) => {
       if (event.key === "Escape") {
-        setExportMenuOpen(false);
+        closeAllMenus();
       }
     });
 
