@@ -75,11 +75,30 @@
   /* ── Buttons ── */
   .btn-row { display: flex; gap: 8px; flex-wrap: wrap; }
   #right .btn-row[role="toolbar"] {
-    flex-wrap: nowrap;
-    align-items: center;
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    align-items: stretch;
     overflow: visible;
   }
-  #right .btn-row[role="toolbar"] > * { flex: 0 0 auto; }
+  .toolbar-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    border: 1px solid #d6d6d1;
+    border-radius: 10px;
+    background: #f7f7f4;
+    flex-wrap: wrap;
+  }
+  .toolbar-group-label {
+    font-size: 0.6875rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: #555;
+    white-space: nowrap;
+  }
   button {
     font-size: 0.8125rem; padding: 7px 16px;
     border-radius: 8px; border: 1px solid #767676;
@@ -216,7 +235,8 @@
 
   /* ── Responsive ── */
   @media (max-width: 700px) {
-    #right .btn-row[role="toolbar"] { flex-wrap: wrap; overflow: visible; }
+    #right .btn-row[role="toolbar"] { overflow: visible; }
+    .toolbar-group { width: 100%; }
   }
 
   /* ── Dual system mode ── */
@@ -243,21 +263,28 @@
   <aside id="right">
     <p id="hint-text" aria-live="polite">Click a node to edit it. Hover for guidance.</p>
     <div class="btn-row" role="toolbar" aria-label="Actions">
-      <button id="analyse-btn">Explain the model</button>
-      <button id="dual-btn" aria-pressed="false">Show two systems</button>
-      <button id="contra-btn" aria-pressed="false">⚡ Add a contradiction</button>
-      <button id="copy-btn">Copy summary and notes</button>
-      <div id="export-wrap">
-        <button id="export-btn"
-                aria-haspopup="menu"
-                aria-expanded="false"
-                aria-controls="export-menu">Export summary and notes ↓</button>
-        <div id="export-menu" role="menu" aria-label="Export format">
-          <button role="menuitem" data-fmt="text">Plain text</button>
-          <button role="menuitem" data-fmt="markdown">Markdown</button>
-          <button role="menuitem" data-fmt="json">JSON</button>
-          <hr style="margin:4px 0;border:none;border-top:1px solid #e0e0e0;" aria-hidden="true">
-          <button role="menuitem" data-fmt="interface">Export interface raw content</button>
+      <div class="toolbar-group" role="group" aria-label="View actions">
+        <span class="toolbar-group-label">View</span>
+        <button id="dual-btn" aria-pressed="false">Show two systems</button>
+      </div>
+      <div class="toolbar-group" role="group" aria-label="Contradiction actions">
+        <span class="toolbar-group-label">Contradictions</span>
+        <button id="contra-btn" aria-pressed="false">⚡ Add a contradiction</button>
+      </div>
+      <div class="toolbar-group" role="group" aria-label="Export actions">
+        <span class="toolbar-group-label">Export</span>
+        <button id="export-interface-btn">Export UI Content for Review</button>
+        <button id="copy-btn">Copy summary and notes</button>
+        <div id="export-wrap">
+          <button id="export-btn"
+                  aria-haspopup="menu"
+                  aria-expanded="false"
+                  aria-controls="export-menu">Export summary and notes ↓</button>
+          <div id="export-menu" role="menu" aria-label="Export format">
+            <button role="menuitem" data-fmt="text">Plain text</button>
+            <button role="menuitem" data-fmt="markdown">Markdown</button>
+            <button role="menuitem" data-fmt="json">JSON</button>
+          </div>
         </div>
       </div>
     </div>
@@ -754,7 +781,7 @@ function showEditor(id) {
   edPrompt.textContent   = n.prompt;
   edInput.value = store[bid];
   edInput.focus();
-  edInput.oninput = () => { store[bid]=edInput.value; updateNodeVisual(id); updateAnalyseBtn(); updateSummary(); };
+  edInput.oninput = () => { store[bid]=edInput.value; updateNodeVisual(id); updateSummary(); };
 }
 
 function showSharedEditor(which) {
@@ -840,14 +867,6 @@ function announce(msg) {
   setTimeout(()=>{ liveRegion.textContent = msg; }, 100);
 }
 
-/* ── Analyse button ── */
-const analyseBtn = document.getElementById("analyse-btn");
-function updateAnalyseBtn() {
-  const has = Object.values(vals).some(v=>v.trim()) ||
-              (dualMode && Object.values(vals2).some(v=>v.trim()));
-  analyseBtn.textContent = has ? "Analyse the system" : "Explain the model";
-}
-
 const modalOverlay = document.getElementById("modal-overlay");
 const modalBox     = document.getElementById("modal-box");
 const modalTitle   = document.getElementById("modal-title");
@@ -880,24 +899,6 @@ function handleModalKey(e) {
 }
 document.getElementById("modal-close").addEventListener("click", closeModal);
 modalOverlay.addEventListener("click", e => { if (e.target===modalOverlay) closeModal(); });
-
-analyseBtn.addEventListener("click", () => {
-  const has = Object.values(vals).some(v=>v.trim()) ||
-              (dualMode && Object.values(vals2).some(v=>v.trim()));
-  if (!has) {
-    showModal("About the model",
-      "Engeström's Activity System has six components:\n\n• Tools — what mediates the activity\n• Subject — who does it\n• Object — what the activity is directed at and works to transform; embeds the activity's motive\n• Rules — norms and conventions\n• Community — the collective co-orienting toward the same object\n• Division of Labour — how work is distributed\n\nClick any node on the triangle to fill it in, then click Analyse for a reading of your system.");
-  } else {
-    const s1lines = NODES.map(n=>`• ${n.label}: ${vals[n.id]||"(empty)"}`).join("\n");
-    const body = dualMode
-      ? "System 1:\n" + s1lines +
-        "\n\nSystem 2:\n" + NODES.map(n=>`• ${n.label}: ${vals2[n.id]||"(empty)"}`).join("\n") +
-        (sharedObject  ? `\n\nShared Object: ${sharedObject}` : "") +
-        (sharedOutcome ? `\nShared Outcome(s): ${sharedOutcome}` : "")
-      : s1lines + "\n\nUse the notes panel to record observations, tensions, or contradictions you notice between components.";
-    showModal("Activity system summary", body);
-  }
-});
 
 /* ── Contradictions ── */
 const contradictions    = [];
@@ -1144,6 +1145,7 @@ copyBtn.addEventListener("click", () => {
 });
 
 /* ── Export menu ── */
+const exportInterfaceBtn = document.getElementById("export-interface-btn");
 const exportBtn  = document.getElementById("export-btn");
 const exportMenu = document.getElementById("export-menu");
 
@@ -1361,13 +1363,15 @@ function download(content,filename,mime) {
   a.href = URL.createObjectURL(new Blob([content],{type:mime}));
   a.download = filename; a.click(); URL.revokeObjectURL(a.href);
 }
+exportInterfaceBtn.addEventListener("click", () => {
+  download(exportInterfaceMarkdown(), "export-interface-raw-content.md", "text/markdown");
+});
 exportMenu.addEventListener("click", e => {
   const fmt = e.target.dataset.fmt;
   if (!fmt) return;
   if (fmt==="text")      download(exportText(),             "activity-system.txt",      "text/plain");
   if (fmt==="markdown")  download(exportMarkdown(),         "activity-system.md",       "text/markdown");
   if (fmt==="json")      download(exportJSON(),             "activity-system.json",     "application/json");
-  if (fmt==="interface") download(exportInterfaceMarkdown(),"export-interface-raw-content.md","text/markdown");
   setExportOpen(false);
   exportBtn.focus();
 });
