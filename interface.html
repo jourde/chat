@@ -186,7 +186,7 @@
 
   #right .btn-row[role="toolbar"] {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     align-items: start;
     gap: 0.625rem;
     width: 100%;
@@ -245,6 +245,40 @@
     width: 100%;
     max-width: 100%;
     aspect-ratio: 1260 / 430;
+  }
+
+  .diagram-overlay-controls {
+    position: absolute;
+    top: 0.8rem;
+    right: 0.8rem;
+    z-index: 12;
+    display: inline-flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.35rem;
+    width: fit-content;
+    max-width: calc(100% - 1.6rem);
+    padding: 0.55rem 0.6rem;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.96);
+    box-shadow: 0 8px 18px rgba(0, 0, 0, 0.06);
+  }
+
+  .diagram-overlay-controls .toolbar-group-label {
+    margin-bottom: 0.1rem;
+  }
+
+  .diagram-overlay-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    width: fit-content;
+    max-width: 100%;
+  }
+
+  .diagram-overlay-controls button {
+    padding: 0.4rem 0.7rem;
   }
 
   #left:fullscreen {
@@ -728,6 +762,13 @@
       grid-template-columns: 1fr;
     }
 
+    .diagram-overlay-controls {
+      position: static;
+      max-width: none;
+      margin-bottom: 0.75rem;
+      box-shadow: none;
+    }
+
     .toolbar-group {
       width: 100%;
       padding-right: 0;
@@ -772,19 +813,6 @@
         <button id="dual-btn" aria-pressed="false">Compare two systems</button>
         <button id="fullscreen-btn" aria-pressed="false">Full-screen diagram</button>
         <button id="guidance-btn" aria-pressed="true">Guidance pop-ups: on</button>
-      </div>
-
-      <div class="toolbar-group" role="group" aria-label="Contradiction mapping">
-        <span class="toolbar-group-label">Contradiction mapping</span>
-        <button id="contra-btn" aria-pressed="false">Map a contradiction</button>
-        <button
-          id="contra-info-btn"
-          aria-haspopup="dialog"
-          aria-expanded="false"
-          aria-controls="contra-guide-overlay"
-        >
-          Info
-        </button>
       </div>
 
       <div class="toolbar-group" role="group" aria-label="Export and transfer">
@@ -837,6 +865,20 @@
     </p>
 
     <div id="svg-wrap">
+      <div class="diagram-overlay-controls" role="group" aria-label="Contradiction mapping">
+        <span class="toolbar-group-label">Contradiction mapping</span>
+        <div class="diagram-overlay-actions">
+          <button id="contra-btn" aria-pressed="false">Map a contradiction</button>
+          <button
+            id="contra-info-btn"
+            aria-haspopup="dialog"
+            aria-expanded="false"
+            aria-controls="contra-guide-overlay"
+          >
+            Info
+          </button>
+        </div>
+      </div>
       <svg
         id="tri"
         viewBox="0 0 580 430"
