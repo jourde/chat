@@ -466,6 +466,19 @@
     font-style: italic;
   }
 
+  .sr-input {
+    min-height: 4.2rem;
+    padding: 0.5rem 0.6rem;
+    border-color: var(--border);
+    background: #fffdf9;
+    font-size: 0.8125rem;
+    line-height: 1.45;
+  }
+
+  .sr-input::placeholder {
+    color: var(--text-soft);
+  }
+
   .sr-divider {
     margin: 0.15rem 0;
     border: none;
@@ -476,8 +489,6 @@
   .sr-contra-inter {
     padding: 0.6rem 0.75rem;
     border-radius: 6px;
-    font-size: 0.75rem;
-    line-height: 1.5;
   }
 
   .sr-contra {
@@ -488,6 +499,18 @@
   .sr-contra-inter {
     border-left: 3px solid var(--inter-system);
     background: #f6f7f8;
+  }
+
+  .sr-contra-title {
+    margin-bottom: 0.45rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    line-height: 1.5;
+  }
+
+  .sr-contra-input {
+    min-height: 3.6rem;
+    background: rgba(255, 255, 255, 0.7);
   }
 
   #notes-row {
@@ -515,7 +538,7 @@
     position: absolute;
     z-index: 10;
     display: none;
-    max-width: 180px;
+    max-width: 260px;
     padding: 6px 8px;
     border: 1px solid var(--border-strong);
     border-radius: 6px;
@@ -523,6 +546,7 @@
     color: #333333;
     font-size: 0.75rem;
     line-height: 1.4;
+    white-space: pre-wrap;
     pointer-events: none;
   }
 
@@ -736,6 +760,7 @@
         <span class="toolbar-group-label">Analysis mode</span>
         <button id="dual-btn" aria-pressed="false">Compare two systems</button>
         <button id="fullscreen-btn" aria-pressed="false">Full-screen diagram</button>
+        <button id="guidance-btn" aria-pressed="true">Guidance pop-ups: on</button>
       </div>
 
       <div class="toolbar-group" role="group" aria-label="Contradiction mapping">
@@ -837,7 +862,7 @@
 <section id="summary-section" aria-labelledby="summary-heading">
   <div id="chat-header">
     <h2 id="summary-heading">Analysis record</h2>
-    <p id="summary-intro">The record is grouped by analytical theme for quick reading and review.</p>
+    <p id="summary-intro">The record is grouped by analytical theme and stays editable in sync with the diagram.</p>
   </div>
 
   <section id="contra-guide" aria-label="Contradiction guidance" hidden>
@@ -1114,6 +1139,7 @@
       2: createEmptyNodeValues()
     },
     activeNodeId: null,
+    activeEditorTarget: null,
     activeSystem: 1,
     dualMode: false,
     sharedObject: "",
@@ -1123,6 +1149,7 @@
     contradictionMode: false,
     contradictionFirstNodeId: null,
     contradictionPromptNodes: null,
+    diagramGuidanceEnabled: true,
     copyResetTimerId: null,
     announceTimerId: null,
     legalDialogOpener: null
@@ -1179,6 +1206,7 @@
     exportWrap: document.getElementById("export-wrap"),
     dualButton: document.getElementById("dual-btn"),
     fullscreenButton: document.getElementById("fullscreen-btn"),
+    guidanceButton: document.getElementById("guidance-btn"),
     legalButton: document.getElementById("legal-btn"),
     legalOverlay: document.getElementById("legal-overlay"),
     legalBox: document.getElementById("legal-box"),
@@ -1224,6 +1252,15 @@
     highlightRect.setAttribute("display", "block");
   }
 
+  function autoResizeTextarea(textarea) {
+    if (!(textarea instanceof HTMLTextAreaElement)) {
+      return;
+    }
+
+    textarea.style.height = "auto";
+    textarea.style.height = `${Math.max(textarea.scrollHeight, 56)}px`;
+  }
+
   function getPreviewText(value, maxChars) {
     const trimmedValue = value.trim().replace(/\s+/g, " ");
     if (!trimmedValue) {
@@ -1256,6 +1293,49 @@
 
   function getNodeDefinition(nodeId) {
     return NODE_MAP.get(getBaseNodeId(nodeId));
+  }
+
+  function getEditorTargetValue() {
+    if (!state.activeEditorTarget) {
+      return "";
+    }
+
+    if (state.activeEditorTarget.type === "node") {
+      const { nodeId } = state.activeEditorTarget;
+      return getStoreForNode(nodeId)[getBaseNodeId(nodeId)];
+    }
+
+    return state[state.activeEditorTarget.field] || "";
+  }
+
+  function syncVisibleEditorValue() {
+    if (dom.editor.hidden || !state.activeEditorTarget) {
+      return;
+    }
+
+    const nextValue = getEditorTargetValue();
+    if (dom.editorInput.value !== nextValue) {
+      dom.editorInput.value = nextValue;
+    }
+  }
+
+  function setNodeValue(nodeId, value, { syncEditor = true } = {}) {
+    const baseNodeId = getBaseNodeId(nodeId);
+    getStoreForNode(nodeId)[baseNodeId] = value;
+    updateNodeVisual(nodeId);
+
+    if (syncEditor) {
+      syncVisibleEditorValue();
+    }
+  }
+
+  function setSharedValue(field, value, { syncEditor = true } = {}) {
+    state[field] = value;
+    updateSharedPreviews();
+
+    if (syncEditor) {
+      syncVisibleEditorValue();
+    }
   }
 
   function getRenderedNodes() {
@@ -1324,7 +1404,7 @@
   }
 
   function renderTooltip(node) {
-    if (state.activeNodeId) {
+    if (state.activeNodeId || !state.diagramGuidanceEnabled) {
       return;
     }
 
@@ -1358,8 +1438,68 @@
     dom.tooltip.style.top = `${top}px`;
   }
 
+  function positionTooltipForElement(anchorElement, preferredTop) {
+    const wrapRect = dom.svgWrap.getBoundingClientRect();
+    const anchorRect = anchorElement.getBoundingClientRect();
+    const tooltipRect = dom.tooltip.getBoundingClientRect();
+    let left = (anchorRect.left - wrapRect.left) + ((anchorRect.width - tooltipRect.width) / 2);
+    let top = preferredTop
+      ? (anchorRect.top - wrapRect.top) - tooltipRect.height - 10
+      : (anchorRect.bottom - wrapRect.top) + 10;
+
+    if (top < 0) {
+      top = (anchorRect.bottom - wrapRect.top) + 10;
+    }
+
+    left = Math.max(0, Math.min(left, wrapRect.width - tooltipRect.width));
+    top = Math.max(0, Math.min(top, wrapRect.height - tooltipRect.height));
+
+    dom.tooltip.style.left = `${left}px`;
+    dom.tooltip.style.top = `${top}px`;
+  }
+
+  function renderPreviewTooltip(value, anchorElement, preferredTop = false) {
+    const fullValue = value.trim();
+    if (!fullValue) {
+      hideTooltip();
+      return;
+    }
+
+    dom.tooltip.replaceChildren(document.createTextNode(fullValue));
+    dom.tooltip.style.display = "block";
+    dom.tooltip.style.borderColor = DIAGRAM_COLORS.highlight;
+    positionTooltipForElement(anchorElement, preferredTop);
+  }
+
+  function attachPreviewTooltip({ hoverTarget, anchorElement, getValue, onLeave = hideTooltip, preferredTop = false }) {
+    hoverTarget.addEventListener("mouseenter", () => {
+      renderPreviewTooltip(getValue(), anchorElement, preferredTop);
+    });
+    hoverTarget.addEventListener("mouseleave", () => {
+      onLeave();
+    });
+  }
+
   function hideTooltip() {
     dom.tooltip.style.display = "none";
+  }
+
+  function getDefaultHintText() {
+    if (state.contradictionMode) {
+      return "Select components to define a contradiction. Guidance appears in the analysis record below.";
+    }
+
+    if (state.diagramGuidanceEnabled) {
+      return "Select a component to edit it. Hover for guidance.";
+    }
+
+    return "Select a component to edit it. Diagram guidance pop-ups are off.";
+  }
+
+  function syncGuidanceUi() {
+    dom.guidanceButton.setAttribute("aria-pressed", String(state.diagramGuidanceEnabled));
+    dom.guidanceButton.textContent = state.diagramGuidanceEnabled ? "Guidance pop-ups: on" : "Guidance pop-ups: off";
+    dom.hintText.textContent = getDefaultHintText();
   }
 
   function announce(message) {
@@ -1593,6 +1733,7 @@
       { x: centerX, y: sharedOutcomeTop + 32, "text-anchor": "middle", "font-size": "10", fill: DIAGRAM_COLORS.muted },
       "Outcome(s)"
     );
+    const sharedOutcomePreviewGroup = createSvgElement("g", {}, sharedOutcomeGroup);
     svgState.sharedOutcomePreviewHighlight = createSvgElement(
       "rect",
       {
@@ -1602,14 +1743,19 @@
         display: "none",
         "aria-hidden": "true"
       },
-      sharedOutcomeGroup
+      sharedOutcomePreviewGroup
     );
     svgState.sharedOutcomePreview = appendTextElement(
-      sharedOutcomeGroup,
+      sharedOutcomePreviewGroup,
       "text",
       { x: centerX, y: sharedOutcomeTop + 48, "text-anchor": "middle", "font-size": "9", fill: DIAGRAM_COLORS.accent, "font-style": "italic" },
       ""
     );
+    attachPreviewTooltip({
+      hoverTarget: sharedOutcomePreviewGroup,
+      anchorElement: svgState.sharedOutcomePreview,
+      getValue: () => state.sharedOutcome
+    });
     svgState.sharedOutcomeGroup = sharedOutcomeGroup;
 
     const sharedObjectGroup = buildInteractiveGroup({
@@ -1655,6 +1801,7 @@
       { x: centerX, y: centerY + 6, "text-anchor": "middle", "font-size": "10", "font-weight": "600", fill: DIAGRAM_COLORS.text },
       "Object"
     );
+    const sharedObjectPreviewGroup = createSvgElement("g", {}, sharedObjectGroup);
     svgState.sharedObjectPreviewHighlight = createSvgElement(
       "rect",
       {
@@ -1664,14 +1811,19 @@
         display: "none",
         "aria-hidden": "true"
       },
-      sharedObjectGroup
+      sharedObjectPreviewGroup
     );
     svgState.sharedObjectPreview = appendTextElement(
-      sharedObjectGroup,
+      sharedObjectPreviewGroup,
       "text",
       { x: centerX, y: centerY + 19, "text-anchor": "middle", "font-size": "9", fill: DIAGRAM_COLORS.accent, "font-style": "italic" },
       ""
     );
+    attachPreviewTooltip({
+      hoverTarget: sharedObjectPreviewGroup,
+      anchorElement: svgState.sharedObjectPreview,
+      getValue: () => state.sharedObject
+    });
     svgState.sharedObjectGroup = sharedObjectGroup;
   }
 
@@ -1741,6 +1893,7 @@
       },
       "Outcome"
     );
+    const outcomePreviewGroup = createSvgElement("g", {}, outcomeGroup);
     svgState.outcomePreviewHighlight = createSvgElement(
       "rect",
       {
@@ -1750,10 +1903,10 @@
         display: "none",
         "aria-hidden": "true"
       },
-      outcomeGroup
+      outcomePreviewGroup
     );
     svgState.outcomePreview = appendTextElement(
-      outcomeGroup,
+      outcomePreviewGroup,
       "text",
       {
         x: boxX + 48,
@@ -1765,6 +1918,11 @@
       },
       ""
     );
+    attachPreviewTooltip({
+      hoverTarget: outcomePreviewGroup,
+      anchorElement: svgState.outcomePreview,
+      getValue: () => state.outcome
+    });
     svgState.outcomeGroup = outcomeGroup;
   }
 
@@ -1888,6 +2046,7 @@
       const previewY = node.labelOffsetY < 0
         ? node.labelOffsetY - 14
         : (node.secondaryLabelOffsetY ? node.secondaryLabelOffsetY + 14 : node.labelOffsetY + 14);
+      const previewGroup = createSvgElement("g", {}, group);
       const previewHighlight = createSvgElement(
         "rect",
         {
@@ -1897,10 +2056,10 @@
           display: "none",
           "aria-hidden": "true"
         },
-        group
+        previewGroup
       );
       const preview = appendTextElement(
-        group,
+        previewGroup,
         "text",
         {
           x: node.x + node.labelOffsetX,
@@ -1913,6 +2072,13 @@
         },
         ""
       );
+      attachPreviewTooltip({
+        hoverTarget: previewGroup,
+        anchorElement: preview,
+        getValue: () => getStoreForNode(node.id)[getBaseNodeId(node.id)],
+        onLeave: () => renderTooltip(node),
+        preferredTop: node.labelOffsetY >= 0
+      });
 
       svgState.nodeElements.set(node.id, {
         group,
@@ -1976,6 +2142,7 @@
     const store = getStoreForNode(nodeId);
     const systemLabel = state.dualMode ? ` — System ${state.activeSystem}` : "";
 
+    state.activeEditorTarget = { type: "node", nodeId };
     dom.editor.hidden = false;
     dom.editor.style.border = `2px solid ${NODE_COLORS[baseNodeId]}`;
     dom.editorLabel.style.color = NODE_COLORS[baseNodeId];
@@ -1986,8 +2153,7 @@
     dom.editorInput.focus();
 
     dom.editorInput.oninput = () => {
-      store[baseNodeId] = dom.editorInput.value;
-      updateNodeVisual(nodeId);
+      setNodeValue(nodeId, dom.editorInput.value, { syncEditor: false });
       updateSummary();
     };
   }
@@ -1996,6 +2162,7 @@
     const isSharedObject = editorType === "sharedObject";
     const isSharedOutcome = editorType === "sharedOutcome";
 
+    state.activeEditorTarget = { type: "shared", field: editorType };
     dom.editor.hidden = false;
     dom.editor.style.border = `2px solid ${DIAGRAM_COLORS.stroke}`;
     dom.editorLabel.style.color = DIAGRAM_COLORS.text;
@@ -2020,14 +2187,13 @@
     dom.editorInput.focus();
     dom.editorInput.oninput = () => {
       if (isSharedObject) {
-        state.sharedObject = dom.editorInput.value;
+        setSharedValue("sharedObject", dom.editorInput.value, { syncEditor: false });
       } else if (isSharedOutcome) {
-        state.sharedOutcome = dom.editorInput.value;
+        setSharedValue("sharedOutcome", dom.editorInput.value, { syncEditor: false });
       } else {
-        state.outcome = dom.editorInput.value;
+        setSharedValue("outcome", dom.editorInput.value, { syncEditor: false });
       }
 
-      updateSharedPreviews();
       updateSummary();
     };
 
@@ -2037,6 +2203,7 @@
 
   function hideEditor() {
     dom.editor.hidden = true;
+    state.activeEditorTarget = null;
   }
 
   function updateSharedPreviews() {
@@ -2141,13 +2308,12 @@
     if (isEnabled) {
       hideEditor();
       state.activeNodeId = null;
-      dom.hintText.textContent = "Select components to define a contradiction. Guidance appears in the analysis record below.";
       dom.contradictionGuide.hidden = false;
     } else {
-      dom.hintText.textContent = "Select a component to edit it. Hover for guidance.";
       dom.contradictionGuide.hidden = true;
     }
 
+    syncGuidanceUi();
     dom.intersystemGuideRow.hidden = !(isEnabled && state.dualMode);
     updateAllNodeVisuals();
   }
@@ -2242,7 +2408,22 @@
     );
   }
 
-  function createSummaryRow(label, value) {
+  function createSummaryInput(label, value, onInput, placeholder = "Add analysis…") {
+    const input = document.createElement("textarea");
+    input.className = "sr-input";
+    input.rows = 1;
+    input.placeholder = placeholder;
+    input.setAttribute("aria-label", label);
+    input.value = value;
+    autoResizeTextarea(input);
+    input.addEventListener("input", () => {
+      autoResizeTextarea(input);
+      onInput(input.value);
+    });
+    return input;
+  }
+
+  function createSummaryRow(label, value, onInput, placeholder) {
     const row = document.createElement("div");
     row.className = "sr-row";
 
@@ -2250,14 +2431,7 @@
     labelElement.className = "sr-label";
     labelElement.textContent = label;
 
-    const valueElement = document.createElement("div");
-    if (value.trim()) {
-      valueElement.className = "sr-value";
-      valueElement.textContent = value;
-    } else {
-      valueElement.className = "sr-empty";
-      valueElement.textContent = "—";
-    }
+    const valueElement = createSummaryInput(label, value, onInput, placeholder);
 
     row.append(labelElement, valueElement);
     return row;
@@ -2284,7 +2458,49 @@
     return heading;
   }
 
-  function renderSummarySection(fragment, store, title = null) {
+  function createContradictionEditor(contradiction, index) {
+    const firstNode = ALL_NODE_MAP.get(contradiction.nodes[0]);
+    if (!firstNode) {
+      return null;
+    }
+
+    const contradictionElement = document.createElement("div");
+
+    let title = "";
+    if (contradiction.type === "primary") {
+      contradictionElement.className = "sr-contra";
+      title = `⚡ Primary — ${firstNode.short}`;
+    } else if (contradiction.type === "secondary") {
+      const secondNode = ALL_NODE_MAP.get(contradiction.nodes[1]);
+      contradictionElement.className = "sr-contra";
+      title = `⚡ Secondary — ${firstNode.short} ↔ ${secondNode ? secondNode.short : "?"}`;
+    } else {
+      const secondNode = ALL_NODE_MAP.get(contradiction.nodes[1]);
+      const firstSystem = contradiction.nodes[0].endsWith("_2") ? 2 : 1;
+      const secondSystem = contradiction.nodes[1].endsWith("_2") ? 2 : 1;
+      contradictionElement.className = "sr-contra-inter";
+      title = `↔ Inter-systemic — ${firstNode.short} (Sys ${firstSystem}) ↔ ${secondNode ? secondNode.short : "?"} (Sys ${secondSystem})`;
+    }
+
+    const titleElement = document.createElement("div");
+    titleElement.className = "sr-contra-title";
+    titleElement.textContent = title;
+
+    const input = createSummaryInput(
+      `${title} description`,
+      contradiction.description,
+      (nextValue) => {
+        state.contradictions[index].description = nextValue;
+      },
+      "Describe this tension…"
+    );
+    input.classList.add("sr-contra-input");
+
+    contradictionElement.append(titleElement, input);
+    return contradictionElement;
+  }
+
+  function renderSummarySection(fragment, store, systemNumber, title = null) {
     if (title) {
       fragment.appendChild(createSummaryHeading(title));
     }
@@ -2294,7 +2510,17 @@
       theme.nodeIds.forEach((nodeId) => {
         const node = NODE_MAP.get(nodeId);
         if (node) {
-          fragment.appendChild(createSummaryRow(node.short, store[nodeId]));
+          const renderedNodeId = systemNumber === 2 ? `${nodeId}_2` : nodeId;
+          fragment.appendChild(
+            createSummaryRow(
+              node.short,
+              store[nodeId],
+              (nextValue) => {
+                setNodeValue(renderedNodeId, nextValue);
+              },
+              node.prompt
+            )
+          );
         }
       });
     });
@@ -2304,44 +2530,54 @@
     const fragment = document.createDocumentFragment();
 
     if (state.dualMode) {
-      renderSummarySection(fragment, state.valuesBySystem[1], "System 1");
+      renderSummarySection(fragment, state.valuesBySystem[1], 1, "System 1");
       fragment.appendChild(createSummaryDivider());
-      renderSummarySection(fragment, state.valuesBySystem[2], "System 2");
+      renderSummarySection(fragment, state.valuesBySystem[2], 2, "System 2");
       fragment.appendChild(createSummaryDivider());
       fragment.appendChild(createSummaryHeading("Shared elements"));
-      fragment.appendChild(createSummaryRow("Shared Object", state.sharedObject));
-      fragment.appendChild(createSummaryRow("Shared Outcome(s)", state.sharedOutcome));
+      fragment.appendChild(
+        createSummaryRow(
+          "Shared Object",
+          state.sharedObject,
+          (nextValue) => {
+            setSharedValue("sharedObject", nextValue);
+          },
+          "What common object or goal connects the two systems?"
+        )
+      );
+      fragment.appendChild(
+        createSummaryRow(
+          "Shared Outcome(s)",
+          state.sharedOutcome,
+          (nextValue) => {
+            setSharedValue("sharedOutcome", nextValue);
+          },
+          "What do both systems jointly produce?"
+        )
+      );
     } else {
-      renderSummarySection(fragment, state.valuesBySystem[1], "Activity system");
+      renderSummarySection(fragment, state.valuesBySystem[1], 1, "Activity system");
       fragment.appendChild(createSummaryDivider());
       fragment.appendChild(createSummaryHeading("Outcome"));
-      fragment.appendChild(createSummaryRow("Outcome", state.outcome));
+      fragment.appendChild(
+        createSummaryRow(
+          "Outcome",
+          state.outcome,
+          (nextValue) => {
+            setSharedValue("outcome", nextValue);
+          },
+          "What does the activity produce or change?"
+        )
+      );
     }
 
     if (state.contradictions.length) {
       fragment.append(createSummaryDivider(), createSummaryHeading("System tensions"));
 
-      state.contradictions.forEach((contradiction) => {
-        const firstNode = ALL_NODE_MAP.get(contradiction.nodes[0]);
-        if (!firstNode) {
+      state.contradictions.forEach((contradiction, index) => {
+        const contradictionElement = createContradictionEditor(contradiction, index);
+        if (!contradictionElement) {
           return;
-        }
-
-        const contradictionElement = document.createElement("div");
-
-        if (contradiction.type === "primary") {
-          contradictionElement.className = "sr-contra";
-          contradictionElement.textContent = `⚡ Primary — ${firstNode.short}${contradiction.description ? `: ${contradiction.description}` : ""}`;
-        } else if (contradiction.type === "secondary") {
-          const secondNode = ALL_NODE_MAP.get(contradiction.nodes[1]);
-          contradictionElement.className = "sr-contra";
-          contradictionElement.textContent = `⚡ Secondary — ${firstNode.short} ↔ ${secondNode ? secondNode.short : "?"}${contradiction.description ? `: ${contradiction.description}` : ""}`;
-        } else {
-          const secondNode = ALL_NODE_MAP.get(contradiction.nodes[1]);
-          const firstSystem = contradiction.nodes[0].endsWith("_2") ? 2 : 1;
-          const secondSystem = contradiction.nodes[1].endsWith("_2") ? 2 : 1;
-          contradictionElement.className = "sr-contra-inter";
-          contradictionElement.textContent = `↔ Inter-systemic — ${firstNode.short} (Sys ${firstSystem}) ↔ ${secondNode ? secondNode.short : "?"} (Sys ${secondSystem})${contradiction.description ? `: ${contradiction.description}` : ""}`;
         }
 
         fragment.appendChild(contradictionElement);
@@ -2889,8 +3125,8 @@
     hideTooltip();
     resetContradictionState();
     closeAllMenus();
-    dom.hintText.textContent = "Select a component to edit it. Hover for guidance.";
     dom.notesInput.value = importedState.notes;
+    syncGuidanceUi();
     syncModeUi();
     buildSvg();
     updateSummary();
@@ -3115,7 +3351,7 @@
     hideEditor();
     hideTooltip();
     resetContradictionState();
-    dom.hintText.textContent = "Select a component to edit it. Hover for guidance.";
+    syncGuidanceUi();
     syncModeUi();
 
     buildSvg();
@@ -3132,6 +3368,14 @@
     dom.dualButton.addEventListener("click", toggleDualMode);
     dom.fullscreenButton.addEventListener("click", () => {
       void toggleDiagramFullscreen();
+    });
+    dom.guidanceButton.addEventListener("click", () => {
+      state.diagramGuidanceEnabled = !state.diagramGuidanceEnabled;
+      if (!state.diagramGuidanceEnabled) {
+        hideTooltip();
+      }
+      syncGuidanceUi();
+      announce(state.diagramGuidanceEnabled ? "Diagram guidance pop-ups enabled." : "Diagram guidance pop-ups disabled.");
     });
 
     dom.copyButton.addEventListener("click", async () => {
@@ -3315,6 +3559,8 @@
 
   function init() {
     bindEvents();
+    syncGuidanceUi();
+    syncModeUi();
     buildSvg();
     updateSummary();
     syncFullscreenUi();
