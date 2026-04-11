@@ -370,38 +370,37 @@
     border-bottom: 1px solid var(--border);
   }
 
-  #contra-guide {
+  #contra-guide-content {
     padding: 0.9rem 1.1rem;
-    border-bottom: 1px solid var(--contradiction);
     background: var(--contradiction-soft);
     color: #333333;
     font-size: 0.75rem;
     line-height: 1.6;
   }
 
-  #contra-guide strong,
-  #contra-guide .cg-type {
+  #contra-guide-content strong,
+  #contra-guide-content .cg-type {
     color: var(--contradiction-text);
   }
 
-  #contra-guide .cg-row {
+  #contra-guide-content .cg-row {
     margin-bottom: 6px;
   }
 
-  #contra-guide .cg-row:last-child {
+  #contra-guide-content .cg-row:last-child {
     margin-bottom: 0;
   }
 
-  #contra-guide .cg-type {
+  #contra-guide-content .cg-type {
     font-weight: 600;
   }
 
-  #contra-guide .cg-example {
+  #contra-guide-content .cg-example {
     color: var(--text-muted);
     font-style: italic;
   }
 
-  #contra-guide .cg-note {
+  #contra-guide-content .cg-note {
     margin-top: 8px;
     padding-top: 7px;
     border-top: 1px solid #dbc8ae;
@@ -633,6 +632,18 @@
     padding: 28px 30px;
   }
 
+  #contra-guide-box {
+    max-width: 560px;
+    padding: 28px 30px;
+  }
+
+  #contra-guide-box h2 {
+    margin-bottom: 0.85rem;
+    padding-right: 28px;
+    font-size: 1rem;
+    font-weight: 700;
+  }
+
   #legal-content h2 {
     margin-bottom: 1.2rem;
     padding-right: 28px;
@@ -766,6 +777,14 @@
       <div class="toolbar-group" role="group" aria-label="Contradiction mapping">
         <span class="toolbar-group-label">Contradiction mapping</span>
         <button id="contra-btn" aria-pressed="false">Map a contradiction</button>
+        <button
+          id="contra-info-btn"
+          aria-haspopup="dialog"
+          aria-expanded="false"
+          aria-controls="contra-guide-overlay"
+        >
+          Info
+        </button>
       </div>
 
       <div class="toolbar-group" role="group" aria-label="Export and transfer">
@@ -793,7 +812,7 @@
             aria-expanded="false"
             aria-controls="export-menu"
           >
-            Export record
+            Export record and notes
           </button>
           <div id="export-menu" role="menu" aria-label="Export format" hidden>
             <button role="menuitem" data-fmt="text">Plain text</button>
@@ -865,28 +884,6 @@
     <p id="summary-intro">The record is grouped by analytical theme and stays editable in sync with the diagram.</p>
   </div>
 
-  <section id="contra-guide" aria-label="Contradiction guidance" hidden>
-    <div class="cg-row">
-      <span class="cg-type">⚡ Primary Contradiction</span> — a tension <strong>within a single component</strong>.<br>
-      Click the same node twice to mark it.<br>
-      <span class="cg-example">Example: the Tools node — staff must use a digital platform they find unusable.</span>
-    </div>
-    <div class="cg-row">
-      <span class="cg-type">⚡ Secondary Contradiction</span> — a tension <strong>between two components</strong>.<br>
-      Click one node, then a different node in the same system.<br>
-      <span class="cg-example">Example: Rules demand standardised assessment, but the Object is personalised learning.</span>
-    </div>
-    <div class="cg-row" id="cg-intersys" hidden>
-      <span class="cg-type">↔ Inter-systemic Contradiction</span> — a tension <strong>between the two activity systems</strong>.<br>
-      Click one node in System 1, then a node in System 2.<br>
-      <span class="cg-example">Example: System 1's rules clash with System 2's division of labour.</span>
-    </div>
-    <div class="cg-note">
-      Note: Engeström (1987) also identifies <strong>tertiary contradictions</strong> — tensions between the
-      dominant form of an activity and a culturally more advanced form of it — which are not modelled here.
-    </div>
-  </section>
-
   <div id="summary-main">
     <div id="summary-body" aria-live="polite" aria-label="Live activity system summary"></div>
 
@@ -902,6 +899,34 @@
   <span class="footer-separator" aria-hidden="true">|</span>
   <button id="legal-btn">Legal notice and privacy policy</button>
 </footer>
+
+<div id="contra-guide-overlay" class="dialog-overlay" hidden>
+  <div id="contra-guide-box" class="dialog-box" role="dialog" aria-modal="true" aria-labelledby="contra-guide-title">
+    <button id="contra-guide-close" class="dialog-close" aria-label="Close contradiction guidance">&#x2715;</button>
+    <div id="contra-guide-content" aria-label="Contradiction guidance">
+      <h2 id="contra-guide-title">Contradiction guidance</h2>
+      <div class="cg-row">
+        <span class="cg-type">⚡ Primary Contradiction</span> — a tension <strong>within a single component</strong>.<br>
+        Click the same node twice to mark it.<br>
+        <span class="cg-example">Example: the Tools node — staff must use a digital platform they find unusable.</span>
+      </div>
+      <div class="cg-row">
+        <span class="cg-type">⚡ Secondary Contradiction</span> — a tension <strong>between two components</strong>.<br>
+        Click one node, then a different node in the same system.<br>
+        <span class="cg-example">Example: Rules demand standardised assessment, but the Object is personalised learning.</span>
+      </div>
+      <div class="cg-row" id="cg-intersys" hidden>
+        <span class="cg-type">↔ Inter-systemic Contradiction</span> — a tension <strong>between the two activity systems</strong>.<br>
+        Click one node in System 1, then a node in System 2.<br>
+        <span class="cg-example">Example: System 1's rules clash with System 2's division of labour.</span>
+      </div>
+      <div class="cg-note">
+        Note: Engeström (1987) also identifies <strong>tertiary contradictions</strong> — tensions between the
+        dominant form of an activity and a culturally more advanced form of it — which are not modelled here.
+      </div>
+    </div>
+  </div>
+</div>
 
 <div id="legal-overlay" class="dialog-overlay" hidden>
   <div id="legal-box" class="dialog-box" role="dialog" aria-modal="true" aria-labelledby="legal-title">
@@ -1152,6 +1177,7 @@
     diagramGuidanceEnabled: true,
     copyResetTimerId: null,
     announceTimerId: null,
+    contradictionGuideDialogOpener: null,
     legalDialogOpener: null
   };
 
@@ -1189,7 +1215,10 @@
     contradictionSaveButton: document.getElementById("contra-save-btn"),
     contradictionCancelButton: document.getElementById("contra-cancel-btn"),
     contradictionButton: document.getElementById("contra-btn"),
-    contradictionGuide: document.getElementById("contra-guide"),
+    contradictionInfoButton: document.getElementById("contra-info-btn"),
+    contradictionGuideOverlay: document.getElementById("contra-guide-overlay"),
+    contradictionGuideBox: document.getElementById("contra-guide-box"),
+    contradictionGuideCloseButton: document.getElementById("contra-guide-close"),
     intersystemGuideRow: document.getElementById("cg-intersys"),
     summaryBody: document.getElementById("summary-body"),
     summaryHeading: document.getElementById("summary-heading"),
@@ -1486,7 +1515,7 @@
 
   function getDefaultHintText() {
     if (state.contradictionMode) {
-      return "Select components to define a contradiction. Guidance appears in the analysis record below.";
+      return "Select components to define a contradiction. Use the Info button next to 'Map a contradiction' for guidance.";
     }
 
     if (state.diagramGuidanceEnabled) {
@@ -1500,6 +1529,10 @@
     dom.guidanceButton.setAttribute("aria-pressed", String(state.diagramGuidanceEnabled));
     dom.guidanceButton.textContent = state.diagramGuidanceEnabled ? "Guidance pop-ups: on" : "Guidance pop-ups: off";
     dom.hintText.textContent = getDefaultHintText();
+  }
+
+  function syncContradictionGuideUi() {
+    dom.intersystemGuideRow.hidden = !state.dualMode;
   }
 
   function announce(message) {
@@ -2308,13 +2341,10 @@
     if (isEnabled) {
       hideEditor();
       state.activeNodeId = null;
-      dom.contradictionGuide.hidden = false;
-    } else {
-      dom.contradictionGuide.hidden = true;
     }
 
     syncGuidanceUi();
-    dom.intersystemGuideRow.hidden = !(isEnabled && state.dualMode);
+    syncContradictionGuideUi();
     updateAllNodeVisuals();
   }
 
@@ -2465,21 +2495,25 @@
     }
 
     const contradictionElement = document.createElement("div");
+    const firstSystemLabel = getNodeSystemLabel(contradiction.nodes[0]);
 
     let title = "";
     if (contradiction.type === "primary") {
       contradictionElement.className = "sr-contra";
-      title = `⚡ Primary — ${firstNode.short}`;
+      title = `⚡ Primary — ${firstNode.short}${firstSystemLabel}`;
     } else if (contradiction.type === "secondary") {
       const secondNode = ALL_NODE_MAP.get(contradiction.nodes[1]);
+      const secondSystemLabel = contradiction.nodes[1]
+        ? getNodeSystemLabel(contradiction.nodes[1])
+        : "";
       contradictionElement.className = "sr-contra";
-      title = `⚡ Secondary — ${firstNode.short} ↔ ${secondNode ? secondNode.short : "?"}`;
+      title = `⚡ Secondary — ${firstNode.short}${firstSystemLabel} ↔ ${secondNode ? `${secondNode.short}${secondSystemLabel}` : "?"}`;
     } else {
       const secondNode = ALL_NODE_MAP.get(contradiction.nodes[1]);
       const firstSystem = contradiction.nodes[0].endsWith("_2") ? 2 : 1;
       const secondSystem = contradiction.nodes[1].endsWith("_2") ? 2 : 1;
       contradictionElement.className = "sr-contra-inter";
-      title = `↔ Inter-systemic — ${firstNode.short} (Sys ${firstSystem}) ↔ ${secondNode ? secondNode.short : "?"} (Sys ${secondSystem})`;
+      title = `↔ Inter-systemic — ${firstNode.short} (System ${firstSystem}) ↔ ${secondNode ? secondNode.short : "?"} (System ${secondSystem})`;
     }
 
     const titleElement = document.createElement("div");
@@ -3082,6 +3116,7 @@
     dom.dualButton.textContent = state.dualMode ? "Return to one system" : "Compare two systems";
     dom.summaryHeading.textContent = state.dualMode ? "Analysis record — Two systems" : "Analysis record";
     dom.app.classList.toggle("dual-active", state.dualMode);
+    syncContradictionGuideUi();
   }
 
   function isDiagramFullscreen() {
@@ -3308,6 +3343,34 @@
     }
   }
 
+  function openContradictionGuideDialog() {
+    state.contradictionGuideDialogOpener = document.activeElement;
+    syncContradictionGuideUi();
+    dom.contradictionGuideOverlay.hidden = false;
+    dom.contradictionInfoButton.setAttribute("aria-expanded", "true");
+    dom.contradictionGuideCloseButton.focus();
+    document.addEventListener("keydown", handleContradictionGuideDialogKeydown);
+  }
+
+  function closeContradictionGuideDialog() {
+    dom.contradictionGuideOverlay.hidden = true;
+    dom.contradictionInfoButton.setAttribute("aria-expanded", "false");
+    document.removeEventListener("keydown", handleContradictionGuideDialogKeydown);
+
+    if (state.contradictionGuideDialogOpener instanceof HTMLElement) {
+      state.contradictionGuideDialogOpener.focus();
+    }
+  }
+
+  function handleContradictionGuideDialogKeydown(event) {
+    if (event.key === "Escape") {
+      closeContradictionGuideDialog();
+      return;
+    }
+
+    trapFocus(event, dom.contradictionGuideBox);
+  }
+
   function openLegalDialog() {
     state.legalDialogOpener = document.activeElement;
     dom.legalOverlay.hidden = false;
@@ -3340,8 +3403,6 @@
     dom.contradictionEditor.hidden = true;
     dom.contradictionButton.classList.remove("btn-contra-active");
     dom.contradictionButton.setAttribute("aria-pressed", "false");
-    dom.contradictionGuide.hidden = true;
-    dom.intersystemGuideRow.hidden = true;
   }
 
   function toggleDualMode() {
@@ -3363,6 +3424,7 @@
     dom.contradictionButton.addEventListener("click", () => {
       setContradictionMode(!state.contradictionMode);
     });
+    dom.contradictionInfoButton.addEventListener("click", openContradictionGuideDialog);
 
     dom.contradictionCancelButton.addEventListener("click", cancelContradictionPrompt);
     dom.dualButton.addEventListener("click", toggleDualMode);
@@ -3547,6 +3609,13 @@
     });
 
     document.addEventListener("fullscreenchange", syncFullscreenUi);
+
+    dom.contradictionGuideCloseButton.addEventListener("click", closeContradictionGuideDialog);
+    dom.contradictionGuideOverlay.addEventListener("click", (event) => {
+      if (event.target === dom.contradictionGuideOverlay) {
+        closeContradictionGuideDialog();
+      }
+    });
 
     dom.legalButton.addEventListener("click", openLegalDialog);
     dom.legalCloseButton.addEventListener("click", closeLegalDialog);
