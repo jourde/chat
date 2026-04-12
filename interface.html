@@ -1,0 +1,3831 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Activity System Analyser based on cultural-historical activity theory (CHAT)</title>
+<style>
+  :root {
+    --page-bg: #f5f5f2;
+    --surface: #ffffff;
+    --surface-muted: #fafaf8;
+    --surface-control: #f3f3f0;
+    --surface-control-hover: #ebebe7;
+    --text: #111111;
+    --text-muted: #4f4f4a;
+    --text-soft: #6f6f69;
+    --border: #d8d8d2;
+    --border-strong: #9a9a93;
+    --focus: #1d5d93;
+    --accent: #385168;
+    --accent-soft: #eef3f6;
+    --contradiction: #8a4b08;
+    --contradiction-soft: #f7f1e8;
+    --contradiction-text: #6e3a05;
+    --inter-system: #4b5563;
+    --link: #2f5d86;
+  }
+
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  [hidden] {
+    display: none !important;
+  }
+
+  body {
+    min-height: 100vh;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem 1.25rem 3rem;
+    overflow-x: hidden;
+    font-family: Arial, "Helvetica Neue", Helvetica, sans-serif;
+    line-height: 1.5;
+    background: var(--page-bg);
+    color: var(--text);
+  }
+
+  h1 {
+    font-size: 1.75rem;
+    font-weight: 600;
+    line-height: 1.2;
+  }
+
+  h2 {
+    font-size: 1rem;
+    font-weight: 600;
+  }
+
+  h3,
+  h4 {
+    font-size: inherit;
+    font-weight: inherit;
+  }
+
+  button,
+  textarea {
+    font: inherit;
+  }
+
+  a {
+    color: var(--link);
+    text-decoration: none;
+  }
+
+  a:hover {
+    text-decoration: underline;
+    text-underline-offset: 0.18em;
+  }
+
+  .page-header {
+    margin-bottom: 1.75rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .page-eyebrow {
+    margin-bottom: 0.35rem;
+    color: var(--text-muted);
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .page-intro {
+    margin-top: 0.5rem;
+    color: var(--text-muted);
+    font-size: 0.875rem;
+  }
+
+  .visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  :focus-visible {
+    outline: 3px solid var(--focus);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  textarea:focus-visible,
+  input[type="text"]:focus-visible {
+    outline-offset: 0;
+    border-radius: 8px;
+  }
+
+  #app {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    width: 100%;
+    max-width: 100%;
+  }
+
+  #left {
+    display: flex;
+    flex-direction: column;
+    gap: 0.875rem;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  #controls {
+    position: sticky;
+    top: 0;
+    z-index: 25;
+    display: flex;
+    flex-direction: column;
+    gap: 0.625rem;
+    width: 100%;
+    max-width: 100%;
+    padding: 1rem;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.96);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+    backdrop-filter: blur(8px);
+    margin-bottom: 1rem;
+  }
+
+  .panel-title,
+  .section-header h2 {
+    margin-bottom: 0.2rem;
+  }
+
+  .floating-panel-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.75rem;
+  }
+
+  .floating-panel-title {
+    min-width: 0;
+  }
+
+  .panel-toggle-btn {
+    flex-shrink: 0;
+    padding: 0.35rem 0.65rem;
+    font-size: 0.75rem;
+  }
+
+  .floating-panel-content {
+    display: flex;
+    flex-direction: column;
+    gap: 0.625rem;
+    min-height: 0;
+    overflow-y: auto;
+    padding-right: 0.1rem;
+  }
+
+
+  .panel-intro,
+  .section-intro,
+  #summary-intro {
+    color: var(--text-muted);
+    font-size: 0.8125rem;
+    line-height: 1.55;
+  }
+
+  .section-header {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+  }
+
+  #hint-text {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+  }
+
+  .btn-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  #controls .btn-row[role="toolbar"] {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 0.625rem;
+    width: 100%;
+    overflow: visible;
+  }
+
+  .toolbar-group {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 6px;
+    min-width: 0;
+    padding: 0 0.625rem 0 0;
+    border-top: 0;
+    border-right: 1px solid var(--border);
+    background: transparent;
+  }
+
+  .toolbar-group:last-child {
+    padding-right: 0;
+    border-right: 0;
+  }
+
+  .toolbar-group-label {
+    color: var(--text-muted);
+    font-size: 0.6875rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    flex-basis: 100%;
+    white-space: nowrap;
+  }
+
+  button {
+    cursor: pointer;
+    padding: 0.5rem 0.875rem;
+    border: 1px solid var(--border-strong);
+    border-radius: 6px;
+    background: var(--surface-control);
+    color: var(--text);
+    font-size: 0.8125rem;
+  }
+
+  button:hover {
+    background: var(--surface-control-hover);
+  }
+
+  .btn-contra-active {
+    background: var(--contradiction-soft) !important;
+    border-color: var(--contradiction) !important;
+    color: var(--contradiction-text) !important;
+  }
+
+  #svg-wrap {
+    position: relative;
+    width: 100%;
+    max-width: 100%;
+    aspect-ratio: 1260 / 430;
+  }
+
+  .diagram-overlay-controls {
+    position: absolute;
+    top: 0.8rem;
+    right: 0.8rem;
+    z-index: 12;
+    display: inline-flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.35rem;
+    width: fit-content;
+    max-width: calc(100% - 1.6rem);
+    padding: 0.55rem 0.6rem;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.96);
+    box-shadow: 0 8px 18px rgba(0, 0, 0, 0.06);
+  }
+
+  .diagram-overlay-header {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    width: 100%;
+  }
+
+  .diagram-overlay-controls .toolbar-group-label {
+    margin-bottom: 0;
+    min-width: 0;
+  }
+
+  .diagram-overlay-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    width: fit-content;
+    max-width: 100%;
+  }
+
+  .diagram-overlay-controls button {
+    padding: 0.4rem 0.7rem;
+  }
+
+  .diagram-overlay-toggle {
+    flex-shrink: 0;
+    min-width: 2rem;
+    padding: 0.25rem 0.45rem;
+    font-size: 0.75rem;
+    line-height: 1;
+  }
+
+  .diagram-overlay-controls.is-collapsed {
+    gap: 0;
+  }
+
+  .diagram-overlay-controls.is-collapsed .diagram-overlay-actions {
+    display: none;
+  }
+
+  .icon-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.2rem;
+    height: 2.2rem;
+    padding: 0;
+    border-radius: 999px;
+    font-weight: 700;
+    line-height: 1;
+  }
+
+  #left:fullscreen {
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr) auto auto;
+    gap: 1rem;
+    width: 100vw;
+    height: 100vh;
+    max-width: none;
+    padding: 1.5rem;
+    background: var(--page-bg);
+  }
+
+  #left:fullscreen #svg-wrap {
+    height: 100%;
+    min-height: 0;
+    aspect-ratio: auto;
+  }
+
+  #left:fullscreen svg {
+    width: 100%;
+    height: 100%;
+    max-width: min(96vw, 1680px);
+    max-height: 100%;
+  }
+
+  svg {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    height: 100%;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--surface);
+  }
+
+  .node-focus-ring,
+  .interactive-focus-ring {
+    display: none;
+    fill: none;
+    stroke: var(--focus);
+    stroke-width: 3;
+    pointer-events: none;
+  }
+
+  g[role="button"]:focus {
+    outline: none;
+  }
+
+  g[role="button"]:focus-visible .node-focus-ring,
+  g[role="button"]:focus-visible .interactive-focus-ring {
+    display: block;
+  }
+
+  #editor,
+  #contra-editor {
+    padding: 0.875rem 1rem;
+    border-radius: 10px;
+    background: var(--surface);
+  }
+
+  #editor {
+    border: 2px solid var(--border);
+  }
+
+  #contra-editor {
+    border: 2px solid var(--contradiction);
+  }
+
+  #editor .label,
+  #contra-editor .label {
+    margin-bottom: 2px;
+    font-size: 0.8125rem;
+    font-weight: 600;
+  }
+
+  #editor .guidance,
+  #editor .prompt,
+  #contra-editor .type-desc {
+    margin-bottom: 6px;
+    color: var(--text-muted);
+    font-size: 0.75rem;
+    line-height: 1.4;
+  }
+
+  #editor .prompt {
+    margin-bottom: 6px;
+    font-style: italic;
+  }
+
+  #contra-editor .label {
+    margin-bottom: 4px;
+    color: var(--contradiction);
+  }
+
+  textarea {
+    width: 100%;
+    min-height: 3.5em;
+    padding: 0.6rem 0.7rem;
+    border: 1px solid var(--border-strong);
+    border-radius: 6px;
+    background: var(--surface);
+    color: var(--text);
+    font-size: 0.8125rem;
+    resize: vertical;
+  }
+
+  #summary-section {
+    display: flex;
+    flex-direction: column;
+    margin-top: 1.5rem;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--surface);
+  }
+
+  #chat-header {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    padding: 1rem 1.1rem 0.9rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  #contra-guide-content {
+    padding: 0.9rem 1.1rem;
+    background: var(--contradiction-soft);
+    color: #333333;
+    font-size: 0.75rem;
+    line-height: 1.6;
+  }
+
+  #contra-guide-content strong,
+  #contra-guide-content .cg-type {
+    color: var(--contradiction-text);
+  }
+
+  #contra-guide-content .cg-row {
+    margin-bottom: 6px;
+  }
+
+  #contra-guide-content .cg-row:last-child {
+    margin-bottom: 0;
+  }
+
+  #contra-guide-content .cg-type {
+    font-weight: 600;
+  }
+
+  #contra-guide-content .cg-example {
+    color: var(--text-muted);
+    font-style: italic;
+  }
+
+  #contra-guide-content .cg-note {
+    margin-top: 8px;
+    padding-top: 7px;
+    border-top: 1px solid #dbc8ae;
+    color: #745733;
+    font-size: 0.7rem;
+    font-style: italic;
+    line-height: 1.5;
+  }
+
+  #summary-main {
+    display: grid;
+    grid-template-columns: minmax(0, 1.6fr) minmax(16rem, 0.8fr);
+    min-height: 0;
+  }
+
+  #summary-body {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: 0.75rem;
+    max-height: 32rem;
+    overflow-y: auto;
+    padding: 1rem 1.1rem 1.15rem;
+  }
+
+  .sr-row {
+    font-size: 0.8125rem;
+    line-height: 1.5;
+  }
+
+  .sr-label {
+    margin-bottom: 0.2rem;
+    color: var(--text-muted);
+    font-size: 0.75rem;
+    font-weight: 700;
+  }
+
+  .sr-sys-heading {
+    margin-top: 0.1rem;
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: var(--text);
+  }
+
+  .sr-group-heading {
+    margin-top: 0.2rem;
+    color: var(--text-muted);
+    font-size: 0.6875rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .sr-value {
+    color: var(--text);
+    white-space: pre-wrap;
+    overflow-wrap: break-word;
+  }
+
+  .sr-empty {
+    color: var(--text-soft);
+    font-style: italic;
+  }
+
+  .sr-input {
+    min-height: 4.2rem;
+    padding: 0.5rem 0.6rem;
+    border-color: var(--border);
+    background: #fffdf9;
+    font-size: 0.8125rem;
+    line-height: 1.45;
+  }
+
+  .sr-input::placeholder {
+    color: var(--text-soft);
+  }
+
+  .sr-divider {
+    margin: 0.15rem 0;
+    border: none;
+    border-top: 1px solid var(--border);
+  }
+
+  .sr-contra,
+  .sr-contra-inter {
+    padding: 0.6rem 0.75rem;
+    border-radius: 6px;
+  }
+
+  .sr-contra {
+    border-left: 3px solid var(--contradiction);
+    background: #fbf8f2;
+  }
+
+  .sr-contra-inter {
+    border-left: 3px solid var(--inter-system);
+    background: #f6f7f8;
+  }
+
+  .sr-contra-title {
+    margin-bottom: 0.45rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    line-height: 1.5;
+  }
+
+  .sr-contra-input {
+    min-height: 3.6rem;
+    background: rgba(255, 255, 255, 0.7);
+  }
+
+  #notes-row {
+    display: flex;
+    flex-direction: column;
+    padding: 1rem 1.1rem 1.15rem;
+    border-left: 1px solid var(--border);
+  }
+
+  #notes-row label {
+    display: block;
+    margin-bottom: 0.35rem;
+    color: var(--text-muted);
+    font-size: 0.75rem;
+    font-weight: 700;
+  }
+
+  #notes-row textarea {
+    flex: 1;
+    min-height: 14rem;
+    resize: vertical;
+  }
+
+  .tooltip {
+    position: absolute;
+    z-index: 10;
+    display: none;
+    max-width: 260px;
+    padding: 6px 8px;
+    border: 1px solid var(--border-strong);
+    border-radius: 6px;
+    background: var(--surface);
+    color: #333333;
+    font-size: 0.75rem;
+    line-height: 1.4;
+    white-space: pre-wrap;
+    pointer-events: none;
+  }
+
+  #export-wrap,
+  #diagram-export-wrap {
+    position: relative;
+    display: inline-block;
+  }
+
+  #export-menu,
+  #diagram-export-menu {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    z-index: 20;
+    min-width: 130px;
+    overflow: hidden;
+    border: 1px solid var(--border-strong);
+    border-radius: 8px;
+    background: var(--surface);
+  }
+
+  #export-menu button,
+  #diagram-export-menu button {
+    display: block;
+    width: 100%;
+    padding: 8px 14px;
+    border: 0;
+    border-radius: 0;
+    background: var(--surface);
+    color: var(--text);
+    text-align: left;
+  }
+
+  #export-menu button:hover,
+  #diagram-export-menu button:hover {
+    background: var(--surface-control);
+  }
+
+  #export-menu button:focus-visible,
+  #diagram-export-menu button:focus-visible {
+    outline-offset: -3px;
+  }
+
+  .dialog-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(244, 244, 240, 0.92);
+  }
+
+  .dialog-box {
+    position: relative;
+    width: 92%;
+    max-height: 85vh;
+    overflow-y: auto;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--surface);
+  }
+
+  .dialog-close {
+    position: absolute;
+    top: 12px;
+    right: 14px;
+    padding: 4px 8px;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    background: none;
+    color: #333333;
+    font-size: 1.125rem;
+    line-height: 1;
+  }
+
+  .dialog-close:hover {
+    background: var(--surface-control);
+  }
+
+  #legal-box {
+    max-width: 620px;
+    padding: 28px 30px;
+  }
+
+  #contra-guide-box {
+    max-width: 560px;
+    padding: 28px 30px;
+  }
+
+  #contra-guide-box h2 {
+    margin-bottom: 0.85rem;
+    padding-right: 28px;
+    font-size: 1rem;
+    font-weight: 700;
+  }
+
+  #legal-content h2 {
+    margin-bottom: 1.2rem;
+    padding-right: 28px;
+    font-size: 1rem;
+    font-weight: 700;
+  }
+
+  #legal-content h3 {
+    margin: 1.2rem 0 0.4rem;
+    color: var(--text);
+    font-size: 0.875rem;
+    font-weight: 600;
+  }
+
+  #legal-content p,
+  #legal-content ul {
+    color: #222222;
+    font-size: 0.8125rem;
+    line-height: 1.65;
+  }
+
+  #legal-content p {
+    margin-bottom: 0.5rem;
+  }
+
+  #legal-content ul {
+    margin: 0.25rem 0 0.5rem 1.25rem;
+  }
+
+  #legal-content li {
+    margin-bottom: 0.25rem;
+  }
+
+  #legal-content a {
+    color: var(--link);
+  }
+
+  #legal-content a:hover {
+    text-decoration: underline;
+  }
+
+  #page-footer {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    gap: 12px;
+    margin-top: 1.5rem;
+    padding-top: 0.9rem;
+    border-top: 1px solid var(--border);
+  }
+
+  #footer-credit {
+    color: var(--text-muted);
+    font-size: 0.75rem;
+  }
+
+  #legal-btn {
+    padding: 0;
+    border: none;
+    background: none;
+    color: var(--text-muted);
+    font-size: 0.75rem;
+  }
+
+  #legal-btn:hover {
+    color: var(--text);
+    text-decoration: underline;
+  }
+
+  .mt-6 {
+    margin-top: 6px;
+  }
+
+  .footer-separator {
+    color: #555555;
+    font-size: 0.75rem;
+  }
+
+  @media (max-width: 700px) {
+    #controls {
+      position: static;
+      box-shadow: none;
+      backdrop-filter: none;
+    }
+
+    #controls .btn-row[role="toolbar"] {
+      flex-direction: column;
+    }
+
+    .diagram-overlay-controls {
+      position: static;
+      max-width: none;
+      margin-bottom: 0.75rem;
+      box-shadow: none;
+    }
+
+    .toolbar-group {
+      width: 100%;
+      padding-right: 0;
+      border-right: 0;
+      border-top: 1px solid var(--border);
+      padding-top: 0.875rem;
+    }
+
+    .toolbar-group:first-child {
+      border-top: 0;
+      padding-top: 0;
+    }
+
+    #summary-main {
+      grid-template-columns: 1fr;
+    }
+
+    #notes-row {
+      border-top: 1px solid var(--border);
+      border-left: 0;
+    }
+  }
+</style>
+</head>
+<body>
+<header class="page-header">
+  <p class="page-eyebrow">Cultural-historical activity theory</p>
+  <h1>Activity System Analyser</h1>
+  <p class="page-intro">A focused workspace for describing activity systems, comparing shared objects, and documenting contradictions. Select a component to edit it. Hover for guidance.</p>
+</header>
+
+<div id="live-region" aria-live="polite" aria-atomic="true" class="visually-hidden"></div>
+
+<section id="controls" aria-labelledby="controls-heading">
+  <div class="floating-panel-header">
+    <div class="floating-panel-title">
+      <h2 id="controls-heading" class="panel-title">Analysis controls</h2>
+      <p id="hint-text" aria-live="polite" class="visually-hidden"></p>
+    </div>
+    <button type="button" id="controls-toggle-btn" class="panel-toggle-btn" aria-expanded="true" aria-controls="controls-panel-content">
+      Collapse
+    </button>
+  </div>
+
+  <div id="controls-panel-content" class="floating-panel-content">
+    <div class="btn-row" role="toolbar" aria-label="Actions">
+      <div class="toolbar-group" role="group" aria-label="Analysis mode">
+        <span class="toolbar-group-label">Analysis mode</span>
+        <button type="button" id="dual-btn" aria-pressed="false">Compare two systems</button>
+        <button type="button" id="fullscreen-btn" aria-pressed="false">Full-screen diagram</button>
+        <button type="button" id="guidance-btn" aria-pressed="true">Guidance pop-ups: on</button>
+      </div>
+
+      <div class="toolbar-group" role="group" aria-label="Export and transfer">
+        <span class="toolbar-group-label">Export and transfer</span>
+        <button type="button" id="export-interface-btn">Export interface text</button>
+        <button type="button" id="copy-btn">Copy record and notes</button>
+        <div id="diagram-export-wrap">
+          <button type="button"
+            id="diagram-export-btn"
+            aria-haspopup="menu"
+            aria-expanded="false"
+            aria-controls="diagram-export-menu"
+          >
+            Export diagram
+          </button>
+          <div id="diagram-export-menu" role="menu" aria-label="Diagram export format" hidden>
+            <button type="button" role="menuitem" data-diagram-fmt="svg">SVG</button>
+            <button type="button" role="menuitem" data-diagram-fmt="png">PNG</button>
+          </div>
+        </div>
+        <div id="export-wrap">
+          <button type="button"
+            id="export-btn"
+            aria-haspopup="menu"
+            aria-expanded="false"
+            aria-controls="export-menu"
+          >
+            Export record and notes
+          </button>
+          <div id="export-menu" role="menu" aria-label="Export format" hidden>
+            <button type="button" role="menuitem" data-fmt="text">Plain text</button>
+            <button type="button" role="menuitem" data-fmt="markdown">Markdown</button>
+            <button type="button" role="menuitem" data-fmt="json">JSON</button>
+            <button type="button" role="menuitem" data-fmt="json-template">JSON template for AI</button>
+          </div>
+        </div>
+        <button type="button" id="import-json-btn">Import JSON</button>
+        <input id="import-json-input" class="visually-hidden" type="file" accept=".json,application/json">
+      </div>
+    </div>
+  </div>
+</section>
+
+<main id="app">
+  <section id="left" aria-labelledby="diagram-heading">
+    <div class="section-header">
+      <h2 id="diagram-heading">Activity system diagram</h2>
+      <p class="section-intro">Enter concise descriptions directly on the diagram. The components are organised around the object of activity and its social conditions.</p>
+    </div>
+    <p id="diagram-instructions" class="visually-hidden">
+      The diagram contains interactive nodes. Press Tab to focus a node, then Enter or Space to edit it.
+    </p>
+
+    <div id="svg-wrap">
+      <div class="diagram-overlay-controls" role="group" aria-label="Contradiction(s)">
+        <div class="diagram-overlay-header">
+          <span class="toolbar-group-label">Contradiction(s)</span>
+          <button type="button"
+            id="contra-panel-toggle-btn"
+            class="diagram-overlay-toggle"
+            aria-expanded="false"
+            aria-controls="contra-overlay-actions"
+            aria-label="Expand contradiction(s)"
+            title="Expand contradiction(s)"
+          >
+            +
+          </button>
+        </div>
+        <div id="contra-overlay-actions" class="diagram-overlay-actions">
+          <button type="button" id="contra-btn" aria-pressed="false">Map a contradiction</button>
+          <button type="button"
+            id="contra-info-btn"
+            class="icon-button"
+            aria-haspopup="dialog"
+            aria-expanded="false"
+            aria-controls="contra-guide-overlay"
+            aria-label="Open contradiction guidance"
+            title="Open contradiction guidance"
+          >
+            ?
+          </button>
+        </div>
+      </div>
+      <svg
+        id="tri"
+        viewBox="0 0 580 430"
+        aria-label="Engeström Activity System Triangle — six interactive nodes: Tools, Subject, Object, Rules, Community, Division of Labour"
+        aria-describedby="diagram-instructions"
+      ></svg>
+      <div class="tooltip" id="tooltip" aria-hidden="true"></div>
+    </div>
+
+    <section id="editor" aria-labelledby="ed-label" hidden>
+      <p class="label" id="ed-label"></p>
+      <p class="guidance" id="ed-guidance"></p>
+      <p class="prompt" id="ed-prompt"></p>
+      <label for="ed-input" class="visually-hidden">Component description</label>
+      <textarea
+        id="ed-input"
+        rows="2"
+        placeholder="Type here…"
+        aria-describedby="ed-guidance ed-prompt"
+      ></textarea>
+    </section>
+
+    <section id="contra-editor" aria-labelledby="contra-label" hidden>
+      <p class="label" id="contra-label"></p>
+      <p class="type-desc" id="contra-type-desc"></p>
+      <label for="contra-input" class="visually-hidden">Contradiction description</label>
+      <textarea
+        id="contra-input"
+        rows="2"
+        placeholder="Describe the contradiction…"
+        aria-describedby="contra-type-desc"
+      ></textarea>
+      <div class="btn-row mt-6">
+        <button type="button" id="contra-save-btn">Save contradiction</button>
+        <button type="button" id="contra-cancel-btn">Cancel</button>
+      </div>
+    </section>
+  </section>
+</main>
+
+<section id="summary-section" aria-labelledby="summary-heading">
+  <div id="chat-header">
+    <h2 id="summary-heading">Analysis record</h2>
+    <p id="summary-intro">The record is grouped by analytical theme and stays editable in sync with the diagram.</p>
+  </div>
+
+  <div id="summary-main">
+    <div id="summary-body" aria-live="polite" aria-label="Live activity system summary"></div>
+
+    <aside id="notes-row">
+      <label for="notes-input">Working notes</label>
+      <textarea id="notes-input" placeholder="Additional notes…"></textarea>
+    </aside>
+  </div>
+</section>
+
+<footer id="page-footer">
+  <p id="footer-credit">François Jourde (2026) — MIT Licence</p>
+  <span class="footer-separator" aria-hidden="true">|</span>
+  <button type="button" id="legal-btn">Legal notice and privacy policy</button>
+</footer>
+
+<div id="contra-guide-overlay" class="dialog-overlay" hidden>
+  <div id="contra-guide-box" class="dialog-box" role="dialog" aria-modal="true" aria-labelledby="contra-guide-title">
+    <button type="button" id="contra-guide-close" class="dialog-close" aria-label="Close contradiction guidance">&#x2715;</button>
+    <div id="contra-guide-content" aria-label="Contradiction guidance">
+      <h2 id="contra-guide-title">Contradiction guidance</h2>
+      <div class="cg-row">
+        <span class="cg-type">⚡ Primary Contradiction</span> — a tension <strong>within a single component</strong>.<br>
+        Click the same node twice to mark it.<br>
+        <span class="cg-example">Example: the Tools node — staff must use a digital platform they find unusable.</span>
+      </div>
+      <div class="cg-row">
+        <span class="cg-type">⚡ Secondary Contradiction</span> — a tension <strong>between two components</strong>.<br>
+        Click one node, then a different node in the same system.<br>
+        <span class="cg-example">Example: Rules demand standardised assessment, but the Object is personalised learning.</span>
+      </div>
+      <div class="cg-row" id="cg-intersys" hidden>
+        <span class="cg-type">↔ Inter-systemic Contradiction</span> — a tension <strong>between the two activity systems</strong>.<br>
+        Click one node in System 1, then a node in System 2.<br>
+        <span class="cg-example">Example: System 1's rules clash with System 2's division of labour.</span>
+      </div>
+      <div class="cg-note">
+        Note: Engeström (1987) also identifies <strong>tertiary contradictions</strong> — tensions between the
+        dominant form of an activity and a culturally more advanced form of it — which are not modelled here.
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="legal-overlay" class="dialog-overlay" hidden>
+  <div id="legal-box" class="dialog-box" role="dialog" aria-modal="true" aria-labelledby="legal-title">
+    <button type="button" id="legal-close" class="dialog-close" aria-label="Close Legal Notice">&#x2715;</button>
+    <div id="legal-content">
+      <h2 id="legal-title">Legal Notice and Privacy Policy</h2>
+
+      <h3>1. Publisher &amp; Hosting</h3>
+      <p><strong>Publisher:</strong> This monopage application is published by François Jourde.</p>
+      <p><strong>Hosting:</strong> This site is hosted by GitHub Inc. Address: 88 Colin P. Kelly Jr. Street, San Francisco, CA 94107, United States.</p>
+
+      <h3>2. How the Application Works &amp; Personal Data</h3>
+      <p>This application was designed following a <em>Privacy by Design</em> approach (privacy by default).</p>
+      <p><strong>No data collection:</strong> The application runs entirely in <em>client-side</em> mode in your web browser.</p>
+      <ul>
+        <li>No data entered or processed in the application is transmitted to the publisher.</li>
+        <li>No data is stored on a remote server (cloud database).</li>
+      </ul>
+      <p>All information remains strictly confined to your device (computer or smartphone).</p>
+
+      <h3>3. Local Storage</h3>
+      <p>To enable the application to function (e.g. saving your preferences or progress), we use your browser's <em>localStorage</em> technology.</p>
+      <ul>
+        <li>This data is stored only on your device.</li>
+        <li>It is accessible only to you.</li>
+        <li>These mechanisms are purely technical and functional, and are therefore exempt from prior consent (no cookie banner required).</li>
+      </ul>
+      <p>You can delete this data at any time by clearing your browser cache.</p>
+
+      <h3>4. Technical Data (Server Logs)</h3>
+      <p>Although the publisher does not collect any data, the hosting infrastructure (GitHub Pages) may collect standard technical data when you connect (such as your IP address and browser type) in connection logs, for security and service reliability purposes.</p>
+      <p>The publisher of this site does not have access to this raw data. For more information, you may consult <a href="https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement" target="_blank" rel="noopener noreferrer">GitHub's Privacy Statement</a>.</p>
+
+      <h3>5. Third-Party Services</h3>
+      <p>This site may load technical resources (fonts, JavaScript libraries) from third-party servers (e.g. Google Fonts, cdnjs). These services may technically have access to your IP address when these resources are loaded.</p>
+
+      <h3>6. Contact</h3>
+      <p>For any questions regarding the application, you may contact the publisher via <a href="https://github.com/jourde" target="_blank" rel="noopener noreferrer">github.com/jourde</a>.</p>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+  "use strict";
+
+  const SVG_NS = "http://www.w3.org/2000/svg";
+  const GEOMETRY = Object.freeze({
+    width: 580,
+    height: 430,
+    secondSystemOffsetX: 680,
+    nodeRadius: 9,
+    edgeGap: 6,
+    toolsX: 270,
+    toolsY: 55,
+    rulesX: 60,
+    rulesY: 375,
+    divisionX: 460,
+    divisionY: 375
+  });
+
+  const SUBJECT_X = (GEOMETRY.toolsX + GEOMETRY.rulesX) / 2;
+  const SUBJECT_Y = (GEOMETRY.toolsY + GEOMETRY.rulesY) / 2;
+  const OBJECT_X = (GEOMETRY.toolsX + GEOMETRY.divisionX) / 2;
+  const OBJECT_Y = (GEOMETRY.toolsY + GEOMETRY.divisionY) / 2;
+  const COMMUNITY_X = (GEOMETRY.rulesX + GEOMETRY.divisionX) / 2;
+  const COMMUNITY_Y = (GEOMETRY.rulesY + GEOMETRY.divisionY) / 2;
+
+  const NODE_COLOR = "#4b5563";
+
+  const DIAGRAM_COLORS = Object.freeze({
+    stroke: "#4f4f4a",
+    text: "#1f1f1c",
+    muted: "#676761",
+    accent: "#385168",
+    highlight: "#f6efb3",
+    contradiction: "#8a4b08",
+    intersystemic: "#4b5563"
+  });
+
+  const SUMMARY_THEMES = Object.freeze([
+    {
+      title: "Core activity",
+      nodeIds: ["subject", "object", "tools"]
+    },
+    {
+      title: "Social organisation",
+      nodeIds: ["rules", "community", "division"]
+    }
+  ]);
+
+  const NODE_PREVIEW_LIMITS = Object.freeze({
+    tools: 30,
+    subject: 24,
+    object: 24,
+    rules: 30,
+    community: 26,
+    division: 26
+  });
+
+  const NODE_DEFINITIONS = Object.freeze([
+    {
+      id: "tools",
+      short: "Tools",
+      x: GEOMETRY.toolsX,
+      y: GEOMETRY.toolsY,
+      label: "Mediating artefacts (tools and signs)",
+      guidance: "Physical objects and systems of symbols (like language, mathematics, digital tools) that people use to accomplish the activity.",
+      prompt: "What tools, technologies, signs or symbols mediate this activity?",
+      lines: ["Tools", null],
+      labelOffsetX: 0,
+      labelOffsetY: -22,
+      secondaryLabelOffsetY: -10,
+      anchor: "middle"
+    },
+    {
+      id: "subject",
+      short: "Subject",
+      x: SUBJECT_X,
+      y: SUBJECT_Y,
+      label: "Subject",
+      guidance: "The person or group engaged in the activity who are the focus of analysis.",
+      prompt: "Who performs the activity? Whose perspective are you analysing?",
+      lines: ["Subject", null],
+      labelOffsetX: -16,
+      labelOffsetY: 0,
+      secondaryLabelOffsetY: 14,
+      anchor: "end"
+    },
+    {
+      id: "object",
+      short: "Object",
+      x: OBJECT_X,
+      y: OBJECT_Y,
+      label: "Object (motive-bearing)",
+      guidance: "What the activity is directed at and works to transform — whether a physical thing, a situation, a concept, or a person's development. The object embeds the motive: it is what makes the activity meaningful and gives it direction.",
+      prompt: "What is being worked on or transformed? What underlying need or motive drives the activity?",
+      lines: ["Object", null],
+      labelOffsetX: 16,
+      labelOffsetY: 0,
+      secondaryLabelOffsetY: 14,
+      anchor: "start"
+    },
+    {
+      id: "rules",
+      short: "Rules",
+      x: GEOMETRY.rulesX,
+      y: GEOMETRY.rulesY,
+      label: "Rules",
+      guidance: "Laws, codes, conventions, customs and agreements that people adhere to while engaging in the activity.",
+      prompt: "What rules, norms or regulations constrain or guide the activity?",
+      lines: ["Rules", null],
+      labelOffsetX: -14,
+      labelOffsetY: 22,
+      secondaryLabelOffsetY: 36,
+      anchor: "end"
+    },
+    {
+      id: "community",
+      short: "Community",
+      x: COMMUNITY_X,
+      y: COMMUNITY_Y,
+      label: "Community",
+      guidance: "The collective in which the subject operates and which co-orients toward the same object. Includes those who share, support, or compete for the same object of activity.",
+      prompt: "Who else is part of the collective that shares or co-orients toward this object?",
+      lines: ["Community", null],
+      labelOffsetX: 0,
+      labelOffsetY: 22,
+      secondaryLabelOffsetY: 36,
+      anchor: "middle"
+    },
+    {
+      id: "division",
+      short: "Division",
+      x: GEOMETRY.divisionX,
+      y: GEOMETRY.divisionY,
+      label: "Division of Labour",
+      guidance: "How the work in the activity is divided among participants — tasks and power.",
+      prompt: "How are tasks, roles and power distributed among participants?",
+      lines: ["Division", "of labour"],
+      labelOffsetX: 14,
+      labelOffsetY: 22,
+      secondaryLabelOffsetY: 36,
+      anchor: "start"
+    }
+  ]);
+
+  const EDGE_DEFINITIONS = Object.freeze([
+    ["tools", "subject"],
+    ["tools", "object"],
+    ["subject", "object"],
+    ["subject", "community"],
+    ["object", "community"],
+    ["subject", "rules"],
+    ["object", "division"],
+    ["rules", "community"],
+    ["community", "division"],
+    ["subject", "division"],
+    ["rules", "object"]
+  ]);
+
+  const SECONDARY_NODE_DEFINITIONS = Object.freeze(
+    NODE_DEFINITIONS.map((node) => ({
+      ...node,
+      id: `${node.id}_2`,
+      x: GEOMETRY.secondSystemOffsetX + (GEOMETRY.width - node.x),
+      labelOffsetX: -node.labelOffsetX,
+      anchor: node.anchor === "start" ? "end" : node.anchor === "end" ? "start" : "middle"
+    }))
+  );
+
+  const SECONDARY_EDGE_DEFINITIONS = Object.freeze(
+    EDGE_DEFINITIONS.map(([from, to]) => [`${from}_2`, `${to}_2`])
+  );
+
+  const NODE_MAP = new Map(NODE_DEFINITIONS.map((node) => [node.id, node]));
+  const ALL_NODES = [...NODE_DEFINITIONS, ...SECONDARY_NODE_DEFINITIONS];
+  const ALL_NODE_MAP = new Map(ALL_NODES.map((node) => [node.id, node]));
+  const FULL_VIEWBOX_WIDTH = GEOMETRY.secondSystemOffsetX + GEOMETRY.width;
+  const REQUIRED_NODE_IDS = Object.freeze(NODE_DEFINITIONS.map(({ id }) => id));
+
+  const createEmptyNodeValues = () =>
+    Object.fromEntries(NODE_DEFINITIONS.map(({ id }) => [id, ""]));
+
+  const state = {
+    valuesBySystem: {
+      1: createEmptyNodeValues(),
+      2: createEmptyNodeValues()
+    },
+    activeNodeId: null,
+    activeEditorTarget: null,
+    activeSystem: 1,
+    dualMode: false,
+    sharedObject: "",
+    sharedOutcome: "",
+    outcome: "",
+    contradictions: [],
+    contradictionMode: false,
+    contradictionFirstNodeId: null,
+    contradictionPromptNodes: null,
+    diagramGuidanceEnabled: true,
+    contradictionOverlayCollapsed: true,
+    controlsPanelCollapsed: false,
+    copyResetTimerId: null,
+    announceTimerId: null,
+    contradictionGuideDialogOpener: null,
+    legalDialogOpener: null
+  };
+
+  const svgState = {
+    nodeElements: new Map(),
+    contradictionLayer: null,
+    sharedObjectGroup: null,
+    sharedObjectPreview: null,
+    sharedObjectPreviewHighlight: null,
+    sharedOutcomeGroup: null,
+    sharedOutcomePreview: null,
+    sharedOutcomePreviewHighlight: null,
+    outcomeGroup: null,
+    outcomePreview: null,
+    outcomePreviewHighlight: null
+  };
+
+  const dom = {
+    app: document.getElementById("app"),
+    leftSection: document.getElementById("left"),
+    svg: document.getElementById("tri"),
+    svgWrap: document.getElementById("svg-wrap"),
+    contradictionOverlay: document.querySelector(".diagram-overlay-controls"),
+    contradictionOverlayActions: document.getElementById("contra-overlay-actions"),
+    contradictionOverlayToggleButton: document.getElementById("contra-panel-toggle-btn"),
+    controlsPanel: document.getElementById("controls"),
+    controlsPanelContent: document.getElementById("controls-panel-content"),
+    controlsToggleButton: document.getElementById("controls-toggle-btn"),
+    tooltip: document.getElementById("tooltip"),
+    liveRegion: document.getElementById("live-region"),
+    hintText: document.getElementById("hint-text"),
+    editor: document.getElementById("editor"),
+    editorLabel: document.getElementById("ed-label"),
+    editorGuidance: document.getElementById("ed-guidance"),
+    editorPrompt: document.getElementById("ed-prompt"),
+    editorInput: document.getElementById("ed-input"),
+    contradictionEditor: document.getElementById("contra-editor"),
+    contradictionLabel: document.getElementById("contra-label"),
+    contradictionTypeDescription: document.getElementById("contra-type-desc"),
+    contradictionInput: document.getElementById("contra-input"),
+    contradictionSaveButton: document.getElementById("contra-save-btn"),
+    contradictionCancelButton: document.getElementById("contra-cancel-btn"),
+    contradictionButton: document.getElementById("contra-btn"),
+    contradictionInfoButton: document.getElementById("contra-info-btn"),
+    contradictionGuideOverlay: document.getElementById("contra-guide-overlay"),
+    contradictionGuideBox: document.getElementById("contra-guide-box"),
+    contradictionGuideCloseButton: document.getElementById("contra-guide-close"),
+    intersystemGuideRow: document.getElementById("cg-intersys"),
+    summaryBody: document.getElementById("summary-body"),
+    summaryHeading: document.getElementById("summary-heading"),
+    notesInput: document.getElementById("notes-input"),
+    copyButton: document.getElementById("copy-btn"),
+    importJsonButton: document.getElementById("import-json-btn"),
+    importJsonInput: document.getElementById("import-json-input"),
+    diagramExportButton: document.getElementById("diagram-export-btn"),
+    diagramExportMenu: document.getElementById("diagram-export-menu"),
+    diagramExportWrap: document.getElementById("diagram-export-wrap"),
+    exportInterfaceButton: document.getElementById("export-interface-btn"),
+    exportButton: document.getElementById("export-btn"),
+    exportMenu: document.getElementById("export-menu"),
+    exportWrap: document.getElementById("export-wrap"),
+    dualButton: document.getElementById("dual-btn"),
+    fullscreenButton: document.getElementById("fullscreen-btn"),
+    guidanceButton: document.getElementById("guidance-btn"),
+    legalButton: document.getElementById("legal-btn"),
+    legalOverlay: document.getElementById("legal-overlay"),
+    legalBox: document.getElementById("legal-box"),
+    legalCloseButton: document.getElementById("legal-close")
+  };
+
+  function setSvgAttributes(element, attributes) {
+    Object.entries(attributes).forEach(([name, value]) => {
+      element.setAttribute(name, value);
+    });
+  }
+
+  function createSvgElement(tagName, attributes = {}, parent = null) {
+    const element = document.createElementNS(SVG_NS, tagName);
+    setSvgAttributes(element, attributes);
+    if (parent) {
+      parent.appendChild(element);
+    }
+    return element;
+  }
+
+  function appendTextElement(parent, tagName, attributes, textContent) {
+    const element = createSvgElement(tagName, attributes, parent);
+    element.textContent = textContent;
+    return element;
+  }
+
+  function updateTextHighlightRect(textElement, highlightRect, { paddingX = 4, paddingY = 2 } = {}) {
+    if (!textElement || !highlightRect) {
+      return;
+    }
+
+    if (!textElement.textContent?.trim()) {
+      highlightRect.setAttribute("display", "none");
+      return;
+    }
+
+    const bounds = textElement.getBBox();
+    highlightRect.setAttribute("x", String(bounds.x - paddingX));
+    highlightRect.setAttribute("y", String(bounds.y - paddingY));
+    highlightRect.setAttribute("width", String(bounds.width + (paddingX * 2)));
+    highlightRect.setAttribute("height", String(bounds.height + (paddingY * 2)));
+    highlightRect.setAttribute("display", "block");
+  }
+
+  function autoResizeTextarea(textarea) {
+    if (!(textarea instanceof HTMLTextAreaElement)) {
+      return;
+    }
+
+    textarea.style.height = "auto";
+    textarea.style.height = `${Math.max(textarea.scrollHeight, 56)}px`;
+  }
+
+  function getPreviewText(value, maxChars) {
+    const trimmedValue = value.trim().replace(/\s+/g, " ");
+    if (!trimmedValue) {
+      return "";
+    }
+
+    if (trimmedValue.length <= maxChars) {
+      return trimmedValue;
+    }
+
+    const candidate = trimmedValue.slice(0, Math.max(1, maxChars - 1));
+    const breakpoint = Math.max(
+      candidate.lastIndexOf(" "),
+      candidate.lastIndexOf(","),
+      candidate.lastIndexOf(";")
+    );
+    const truncated = breakpoint > Math.floor(maxChars * 0.8)
+      ? candidate.slice(0, breakpoint)
+      : candidate;
+    return `${truncated.trimEnd()}…`;
+  }
+
+  function getBaseNodeId(nodeId) {
+    return nodeId.endsWith("_2") ? nodeId.slice(0, -2) : nodeId;
+  }
+
+  function getStoreForNode(nodeId) {
+    return state.valuesBySystem[nodeId.endsWith("_2") ? 2 : 1];
+  }
+
+  function getNodeDefinition(nodeId) {
+    return NODE_MAP.get(getBaseNodeId(nodeId));
+  }
+
+  function getEditorTargetValue() {
+    if (!state.activeEditorTarget) {
+      return "";
+    }
+
+    if (state.activeEditorTarget.type === "node") {
+      const { nodeId } = state.activeEditorTarget;
+      return getStoreForNode(nodeId)[getBaseNodeId(nodeId)];
+    }
+
+    return state[state.activeEditorTarget.field] || "";
+  }
+
+  function syncVisibleEditorValue() {
+    if (dom.editor.hidden || !state.activeEditorTarget) {
+      return;
+    }
+
+    const nextValue = getEditorTargetValue();
+    if (dom.editorInput.value !== nextValue) {
+      dom.editorInput.value = nextValue;
+    }
+  }
+
+  function setNodeValue(nodeId, value, { syncEditor = true } = {}) {
+    const baseNodeId = getBaseNodeId(nodeId);
+    getStoreForNode(nodeId)[baseNodeId] = value;
+    updateNodeVisual(nodeId);
+
+    if (syncEditor) {
+      syncVisibleEditorValue();
+    }
+  }
+
+  function setSharedValue(field, value, { syncEditor = true } = {}) {
+    state[field] = value;
+    updateSharedPreviews();
+
+    if (syncEditor) {
+      syncVisibleEditorValue();
+    }
+  }
+
+  function getRenderedNodes() {
+    return state.dualMode ? ALL_NODES : NODE_DEFINITIONS;
+  }
+
+  function getRenderedEdges() {
+    return state.dualMode
+      ? [
+          [NODE_DEFINITIONS, EDGE_DEFINITIONS],
+          [SECONDARY_NODE_DEFINITIONS, SECONDARY_EDGE_DEFINITIONS]
+        ]
+      : [[NODE_DEFINITIONS, EDGE_DEFINITIONS]];
+  }
+
+  function shortenLine(x1, y1, x2, y2) {
+    const deltaX = x2 - x1;
+    const deltaY = y2 - y1;
+    const lineLength = Math.sqrt((deltaX ** 2) + (deltaY ** 2));
+
+    if (lineLength < 1) {
+      return { x1, y1, x2, y2 };
+    }
+
+    const padding = GEOMETRY.nodeRadius + GEOMETRY.edgeGap + 10;
+    const unitX = deltaX / lineLength;
+    const unitY = deltaY / lineLength;
+
+    return {
+      x1: x1 + (unitX * padding),
+      y1: y1 + (unitY * padding),
+      x2: x2 - (unitX * padding),
+      y2: y2 - (unitY * padding)
+    };
+  }
+
+  function buildMarkers(definitionsGroup) {
+    const createMarker = (id, refX, reverse) => {
+      const marker = createSvgElement(
+        "marker",
+        {
+          id,
+          markerWidth: "8",
+          markerHeight: "8",
+          refX: String(refX),
+          refY: "4",
+          orient: reverse ? "auto-start-reverse" : "auto",
+          markerUnits: "userSpaceOnUse"
+        },
+        definitionsGroup
+      );
+
+      createSvgElement(
+        "path",
+        {
+          d: "M0,1 L7,4 L0,7 z",
+          fill: DIAGRAM_COLORS.stroke
+        },
+        marker
+      );
+    };
+
+    createMarker("tip-end", 0, false);
+    createMarker("tip-start", 7, true);
+    createMarker("tip-out", 0, false);
+  }
+
+  function renderTooltip(node) {
+    if (state.activeNodeId || !state.diagramGuidanceEnabled) {
+      return;
+    }
+
+    const baseNodeId = getBaseNodeId(node.id);
+    const wrapWidth = dom.svgWrap.offsetWidth;
+    const wrapHeight = dom.svgWrap.offsetHeight;
+    const viewBoxWidth = state.dualMode ? FULL_VIEWBOX_WIDTH : GEOMETRY.width;
+    const scale = Math.min(wrapWidth / viewBoxWidth, wrapHeight / GEOMETRY.height);
+    const contentWidth = viewBoxWidth * scale;
+    const offsetX = (wrapWidth - contentWidth) / 2;
+
+    const strong = document.createElement("strong");
+    strong.style.color = DIAGRAM_COLORS.accent;
+    strong.textContent = node.short;
+
+    dom.tooltip.replaceChildren(
+      strong,
+      document.createElement("br"),
+      document.createTextNode(node.guidance)
+    );
+    dom.tooltip.style.display = "block";
+    dom.tooltip.style.borderColor = DIAGRAM_COLORS.stroke;
+
+    let left = offsetX + (node.x * scale) + (node.labelOffsetX || 0) - 90;
+    let top = (node.y * scale) + (node.labelOffsetY < 0 ? -90 : 20);
+
+    left = Math.max(0, Math.min(left, wrapWidth - 190));
+    top = Math.max(0, top);
+
+    dom.tooltip.style.left = `${left}px`;
+    dom.tooltip.style.top = `${top}px`;
+  }
+
+  function positionTooltipForElement(anchorElement, preferredTop) {
+    const wrapRect = dom.svgWrap.getBoundingClientRect();
+    const anchorRect = anchorElement.getBoundingClientRect();
+    const tooltipRect = dom.tooltip.getBoundingClientRect();
+    let left = (anchorRect.left - wrapRect.left) + ((anchorRect.width - tooltipRect.width) / 2);
+    let top = preferredTop
+      ? (anchorRect.top - wrapRect.top) - tooltipRect.height - 10
+      : (anchorRect.bottom - wrapRect.top) + 10;
+
+    if (top < 0) {
+      top = (anchorRect.bottom - wrapRect.top) + 10;
+    }
+
+    left = Math.max(0, Math.min(left, wrapRect.width - tooltipRect.width));
+    top = Math.max(0, Math.min(top, wrapRect.height - tooltipRect.height));
+
+    dom.tooltip.style.left = `${left}px`;
+    dom.tooltip.style.top = `${top}px`;
+  }
+
+  function renderPreviewTooltip(value, anchorElement, preferredTop = false) {
+    const fullValue = value.trim();
+    if (!fullValue) {
+      hideTooltip();
+      return;
+    }
+
+    dom.tooltip.replaceChildren(document.createTextNode(fullValue));
+    dom.tooltip.style.display = "block";
+    dom.tooltip.style.borderColor = DIAGRAM_COLORS.highlight;
+    positionTooltipForElement(anchorElement, preferredTop);
+  }
+
+  function attachPreviewTooltip({ hoverTarget, anchorElement, getValue, onLeave = hideTooltip, preferredTop = false }) {
+    hoverTarget.addEventListener("mouseenter", () => {
+      renderPreviewTooltip(getValue(), anchorElement, preferredTop);
+    });
+    hoverTarget.addEventListener("mouseleave", () => {
+      onLeave();
+    });
+  }
+
+  function hideTooltip() {
+    dom.tooltip.style.display = "none";
+  }
+
+  function getDefaultHintText() {
+    if (state.contradictionMode) {
+      return "Select components to define a contradiction. Use the Info button next to 'Map a contradiction' for guidance.";
+    }
+
+    if (state.diagramGuidanceEnabled) {
+      return "Select a component to edit it. Hover for guidance.";
+    }
+
+    return "Select a component to edit it. Diagram guidance pop-ups are off.";
+  }
+
+  function syncGuidanceUi() {
+    dom.guidanceButton.setAttribute("aria-pressed", String(state.diagramGuidanceEnabled));
+    dom.guidanceButton.textContent = state.diagramGuidanceEnabled ? "Guidance pop-ups: on" : "Guidance pop-ups: off";
+    dom.hintText.textContent = getDefaultHintText();
+  }
+
+  function syncContradictionGuideUi() {
+    dom.intersystemGuideRow.hidden = !state.dualMode;
+  }
+
+  function syncContradictionOverlayUi() {
+    dom.contradictionOverlay.classList.toggle("is-collapsed", state.contradictionOverlayCollapsed);
+    dom.contradictionOverlayActions.hidden = state.contradictionOverlayCollapsed;
+    dom.contradictionOverlayToggleButton.setAttribute("aria-expanded", String(!state.contradictionOverlayCollapsed));
+    dom.contradictionOverlayToggleButton.setAttribute(
+      "aria-label",
+      state.contradictionOverlayCollapsed ? "Expand contradiction(s)" : "Collapse contradiction(s)"
+    );
+    dom.contradictionOverlayToggleButton.title = state.contradictionOverlayCollapsed
+      ? "Expand contradiction(s)"
+      : "Collapse contradiction(s)";
+    dom.contradictionOverlayToggleButton.textContent = state.contradictionOverlayCollapsed ? "+" : "-";
+  }
+
+  function syncControlsPanelUi() {
+    dom.controlsPanel.classList.toggle("is-collapsed", state.controlsPanelCollapsed);
+    dom.controlsPanelContent.hidden = state.controlsPanelCollapsed;
+    dom.controlsToggleButton.setAttribute("aria-expanded", String(!state.controlsPanelCollapsed));
+    dom.controlsToggleButton.textContent = state.controlsPanelCollapsed ? "Expand" : "Collapse";
+  }
+
+  function announce(message) {
+    window.clearTimeout(state.announceTimerId);
+    dom.liveRegion.textContent = "";
+    state.announceTimerId = window.setTimeout(() => {
+      dom.liveRegion.textContent = message;
+    }, 100);
+  }
+
+  function getNodeSystemLabel(nodeId) {
+    if (!state.dualMode) {
+      return "";
+    }
+    return nodeId.endsWith("_2") ? " (System 2)" : " (System 1)";
+  }
+
+  function updateNodeAriaLabel(nodeId) {
+    const nodeDefinition = getNodeDefinition(nodeId);
+    const nodeElement = svgState.nodeElements.get(nodeId);
+
+    if (!nodeDefinition || !nodeElement) {
+      return;
+    }
+
+    const currentValue = getStoreForNode(nodeId)[getBaseNodeId(nodeId)].trim();
+    const systemLabel = getNodeSystemLabel(nodeId);
+    let ariaLabel = "";
+
+    if (state.contradictionMode) {
+      if (state.contradictionFirstNodeId === nodeId) {
+        ariaLabel = `${nodeDefinition.short}${systemLabel} selected. Activate again for a primary contradiction, or activate another node for a secondary contradiction.`;
+      } else {
+        ariaLabel = currentValue
+          ? `${nodeDefinition.short}${systemLabel}: ${currentValue}. Activate to select for contradiction.`
+          : `${nodeDefinition.short}${systemLabel}: empty. Activate to select for contradiction.`;
+      }
+    } else {
+      ariaLabel = currentValue
+        ? `${nodeDefinition.short}${systemLabel}: ${currentValue}. Activate to edit.`
+        : `${nodeDefinition.short}${systemLabel}: empty. Activate to edit.`;
+    }
+
+    nodeElement.group.setAttribute("aria-label", ariaLabel);
+  }
+
+  function updateSharedGroupAriaLabels() {
+    if (svgState.sharedObjectGroup) {
+      const value = state.sharedObject.trim() || "empty";
+      svgState.sharedObjectGroup.setAttribute("aria-label", `Shared Object: ${value}. Activate to edit.`);
+    }
+
+    if (svgState.sharedOutcomeGroup) {
+      const value = state.sharedOutcome.trim() || "empty";
+      svgState.sharedOutcomeGroup.setAttribute("aria-label", `Shared Outcome(s): ${value}. Activate to edit.`);
+    }
+
+    if (svgState.outcomeGroup) {
+      const value = state.outcome.trim() || "empty";
+      svgState.outcomeGroup.setAttribute("aria-label", `Outcome: ${value}. Activate to edit.`);
+    }
+  }
+
+  function updateNodeVisual(nodeId) {
+    const nodeElement = svgState.nodeElements.get(nodeId);
+    if (!nodeElement) {
+      return;
+    }
+
+    const baseNodeId = getBaseNodeId(nodeId);
+    const nodeColor = NODE_COLOR;
+    const nodeValue = getStoreForNode(nodeId)[baseNodeId].trim();
+    const isActive = state.activeNodeId === nodeId;
+    const isFirstContradictionNode =
+      state.contradictionMode &&
+      state.contradictionFirstNodeId === nodeId &&
+      state.contradictionPromptNodes === null;
+
+    nodeElement.circle.setAttribute(
+      "stroke",
+      isFirstContradictionNode ? DIAGRAM_COLORS.contradiction : (isActive || nodeValue ? nodeColor : DIAGRAM_COLORS.stroke)
+    );
+    nodeElement.circle.setAttribute(
+      "stroke-width",
+      isActive || isFirstContradictionNode ? "2.5" : "1.5"
+    );
+    nodeElement.dot.setAttribute("fill", nodeValue ? nodeColor : "transparent");
+
+    const labelColor = nodeValue || isActive ? nodeColor : DIAGRAM_COLORS.text;
+    nodeElement.primaryLabel.setAttribute("fill", labelColor);
+    if (nodeElement.secondaryLabel) {
+      nodeElement.secondaryLabel.setAttribute("fill", labelColor);
+    }
+
+    const previewLimit = NODE_PREVIEW_LIMITS[baseNodeId] || 24;
+    nodeElement.preview.textContent = getPreviewText(nodeValue, previewLimit);
+    nodeElement.preview.setAttribute("fill", nodeColor);
+    updateTextHighlightRect(nodeElement.preview, nodeElement.previewHighlight);
+
+    updateNodeAriaLabel(nodeId);
+  }
+
+  function updateAllNodeVisuals() {
+    getRenderedNodes().forEach((node) => updateNodeVisual(node.id));
+    updateSharedGroupAriaLabels();
+  }
+
+  function buildInteractiveGroup({ label, onActivate }) {
+    const group = createSvgElement(
+      "g",
+      {
+        role: "button",
+        tabindex: "0",
+        "aria-label": label,
+        style: "cursor:pointer"
+      }
+    );
+
+    group.addEventListener("click", onActivate);
+    group.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        onActivate();
+      }
+    });
+
+    return group;
+  }
+
+  function renderSharedControls() {
+    if (state.dualMode) {
+      renderDualModeSharedControls();
+      return;
+    }
+
+    renderSingleModeOutcome();
+  }
+
+  function renderDualModeSharedControls() {
+    const centerX = 630;
+    const centerY = OBJECT_Y;
+    const boxWidth = 80;
+    const boxHeight = 44;
+    const boxX = centerX - (boxWidth / 2);
+    const boxY = centerY - (boxHeight / 2);
+    const sharedOutcomeTop = boxY - 96;
+    const sharedOutcomeArrowY = boxY - 44;
+    const systemOneObject = NODE_DEFINITIONS.find((node) => node.id === "object");
+    const systemTwoObject = SECONDARY_NODE_DEFINITIONS.find((node) => node.id === "object_2");
+
+    const decorativeGroup = createSvgElement("g", { "aria-hidden": "true" }, dom.svg);
+    createSvgElement(
+      "line",
+      {
+        x1: systemOneObject.x + GEOMETRY.nodeRadius + GEOMETRY.edgeGap + 2,
+        y1: centerY,
+        x2: boxX - 4,
+        y2: centerY,
+        stroke: DIAGRAM_COLORS.stroke,
+        "stroke-width": "1.5",
+        "marker-end": "url(#tip-out)"
+      },
+      decorativeGroup
+    );
+    createSvgElement(
+      "line",
+      {
+        x1: systemTwoObject.x - GEOMETRY.nodeRadius - GEOMETRY.edgeGap - 2,
+        y1: centerY,
+        x2: boxX + boxWidth + 4,
+        y2: centerY,
+        stroke: DIAGRAM_COLORS.stroke,
+        "stroke-width": "1.5",
+        "marker-end": "url(#tip-out)"
+      },
+      decorativeGroup
+    );
+    createSvgElement(
+      "line",
+      {
+        x1: centerX,
+        y1: boxY - 4,
+        x2: centerX,
+        y2: sharedOutcomeArrowY,
+        stroke: DIAGRAM_COLORS.stroke,
+        "stroke-width": "1.5",
+        "marker-end": "url(#tip-out)"
+      },
+      decorativeGroup
+    );
+
+    const sharedOutcomeGroup = buildInteractiveGroup({
+      label: "Shared Outcome(s): empty. Activate to edit.",
+      onActivate: () => showSharedEditor("sharedOutcome")
+    });
+    dom.svg.appendChild(sharedOutcomeGroup);
+    createSvgElement(
+      "rect",
+      {
+        x: centerX - 50,
+        y: sharedOutcomeTop,
+        width: 100,
+        height: 58,
+        rx: "4",
+        fill: "transparent",
+        stroke: "none"
+      },
+      sharedOutcomeGroup
+    );
+    createSvgElement(
+      "rect",
+      {
+        x: centerX - 52,
+        y: sharedOutcomeTop - 2,
+        width: 104,
+        height: 62,
+        rx: "6",
+        class: "interactive-focus-ring"
+      },
+      sharedOutcomeGroup
+    );
+    appendTextElement(
+      sharedOutcomeGroup,
+      "text",
+      { x: centerX, y: sharedOutcomeTop + 18, "text-anchor": "middle", "font-size": "10", fill: DIAGRAM_COLORS.muted },
+      "Shared"
+    );
+    appendTextElement(
+      sharedOutcomeGroup,
+      "text",
+      { x: centerX, y: sharedOutcomeTop + 32, "text-anchor": "middle", "font-size": "10", fill: DIAGRAM_COLORS.muted },
+      "Outcome(s)"
+    );
+    const sharedOutcomePreviewGroup = createSvgElement("g", {}, sharedOutcomeGroup);
+    svgState.sharedOutcomePreviewHighlight = createSvgElement(
+      "rect",
+      {
+        rx: "3",
+        ry: "3",
+        fill: DIAGRAM_COLORS.highlight,
+        display: "none",
+        "aria-hidden": "true"
+      },
+      sharedOutcomePreviewGroup
+    );
+    svgState.sharedOutcomePreview = appendTextElement(
+      sharedOutcomePreviewGroup,
+      "text",
+      { x: centerX, y: sharedOutcomeTop + 48, "text-anchor": "middle", "font-size": "9", fill: DIAGRAM_COLORS.accent, "font-style": "italic" },
+      ""
+    );
+    attachPreviewTooltip({
+      hoverTarget: sharedOutcomePreviewGroup,
+      anchorElement: svgState.sharedOutcomePreview,
+      getValue: () => state.sharedOutcome
+    });
+    svgState.sharedOutcomeGroup = sharedOutcomeGroup;
+
+    const sharedObjectGroup = buildInteractiveGroup({
+      label: "Shared Object: empty. Activate to edit.",
+      onActivate: () => showSharedEditor("sharedObject")
+    });
+    dom.svg.appendChild(sharedObjectGroup);
+    createSvgElement(
+      "rect",
+      {
+        x: boxX - 2,
+        y: boxY - 2,
+        width: boxWidth + 4,
+        height: boxHeight + 4,
+        rx: "10",
+        class: "interactive-focus-ring"
+      },
+      sharedObjectGroup
+    );
+    createSvgElement(
+      "rect",
+      {
+        x: boxX,
+        y: boxY,
+        width: boxWidth,
+        height: boxHeight,
+        rx: "8",
+        fill: "#fff",
+        stroke: DIAGRAM_COLORS.stroke,
+        "stroke-width": "1.5"
+      },
+      sharedObjectGroup
+    );
+    appendTextElement(
+      sharedObjectGroup,
+      "text",
+      { x: centerX, y: centerY - 6, "text-anchor": "middle", "font-size": "10", "font-weight": "600", fill: DIAGRAM_COLORS.text },
+      "Shared"
+    );
+    appendTextElement(
+      sharedObjectGroup,
+      "text",
+      { x: centerX, y: centerY + 6, "text-anchor": "middle", "font-size": "10", "font-weight": "600", fill: DIAGRAM_COLORS.text },
+      "Object"
+    );
+    const sharedObjectPreviewGroup = createSvgElement("g", {}, sharedObjectGroup);
+    svgState.sharedObjectPreviewHighlight = createSvgElement(
+      "rect",
+      {
+        rx: "3",
+        ry: "3",
+        fill: DIAGRAM_COLORS.highlight,
+        display: "none",
+        "aria-hidden": "true"
+      },
+      sharedObjectPreviewGroup
+    );
+    svgState.sharedObjectPreview = appendTextElement(
+      sharedObjectPreviewGroup,
+      "text",
+      { x: centerX, y: centerY + 19, "text-anchor": "middle", "font-size": "9", fill: DIAGRAM_COLORS.accent, "font-style": "italic" },
+      ""
+    );
+    attachPreviewTooltip({
+      hoverTarget: sharedObjectPreviewGroup,
+      anchorElement: svgState.sharedObjectPreview,
+      getValue: () => state.sharedObject
+    });
+    svgState.sharedObjectGroup = sharedObjectGroup;
+  }
+
+  function renderSingleModeOutcome() {
+    const objectNode = NODE_DEFINITIONS.find((node) => node.id === "object");
+    const arrowStartX = objectNode.x + GEOMETRY.nodeRadius + GEOMETRY.edgeGap + 2;
+    const boxX = objectNode.x + 82;
+    const boxY = objectNode.y - 14;
+    const centerY = objectNode.y;
+
+    const decorativeGroup = createSvgElement("g", { "aria-hidden": "true" }, dom.svg);
+    createSvgElement(
+      "line",
+      {
+        x1: arrowStartX,
+        y1: centerY,
+        x2: boxX - 4,
+        y2: centerY,
+        stroke: DIAGRAM_COLORS.stroke,
+        "stroke-width": "1.5",
+        "marker-end": "url(#tip-out)"
+      },
+      decorativeGroup
+    );
+
+    const outcomeGroup = buildInteractiveGroup({
+      label: "Outcome: empty. Activate to edit.",
+      onActivate: () => showSharedEditor("outcome")
+    });
+    dom.svg.appendChild(outcomeGroup);
+    createSvgElement(
+      "rect",
+      {
+        x: boxX - 2,
+        y: boxY - 2,
+        width: 100,
+        height: 32,
+        rx: "8",
+        class: "interactive-focus-ring"
+      },
+      outcomeGroup
+    );
+    createSvgElement(
+      "rect",
+      {
+        x: boxX,
+        y: boxY,
+        width: 96,
+        height: 28,
+        rx: "6",
+        fill: "#fff",
+        stroke: DIAGRAM_COLORS.stroke,
+        "stroke-width": "1.5"
+      },
+      outcomeGroup
+    );
+    appendTextElement(
+      outcomeGroup,
+      "text",
+      {
+        x: boxX + 48,
+        y: centerY - 1,
+        "text-anchor": "middle",
+        "font-size": "10",
+        "font-weight": "600",
+        fill: DIAGRAM_COLORS.text
+      },
+      "Outcome"
+    );
+    const outcomePreviewGroup = createSvgElement("g", {}, outcomeGroup);
+    svgState.outcomePreviewHighlight = createSvgElement(
+      "rect",
+      {
+        rx: "3",
+        ry: "3",
+        fill: DIAGRAM_COLORS.highlight,
+        display: "none",
+        "aria-hidden": "true"
+      },
+      outcomePreviewGroup
+    );
+    svgState.outcomePreview = appendTextElement(
+      outcomePreviewGroup,
+      "text",
+      {
+        x: boxX + 48,
+        y: centerY + 11,
+        "text-anchor": "middle",
+        "font-size": "9",
+        fill: DIAGRAM_COLORS.accent,
+        "font-style": "italic"
+      },
+      ""
+    );
+    attachPreviewTooltip({
+      hoverTarget: outcomePreviewGroup,
+      anchorElement: svgState.outcomePreview,
+      getValue: () => state.outcome
+    });
+    svgState.outcomeGroup = outcomeGroup;
+  }
+
+  function renderEdges(nodes, edges) {
+    const group = createSvgElement("g", { "aria-hidden": "true" }, dom.svg);
+
+    edges.forEach(([fromId, toId]) => {
+      const fromNode = nodes.find((node) => node.id === fromId);
+      const toNode = nodes.find((node) => node.id === toId);
+      const shortenedLine = shortenLine(fromNode.x, fromNode.y, toNode.x, toNode.y);
+
+      createSvgElement(
+        "line",
+        {
+          x1: shortenedLine.x1,
+          y1: shortenedLine.y1,
+          x2: shortenedLine.x2,
+          y2: shortenedLine.y2,
+          stroke: DIAGRAM_COLORS.stroke,
+          "stroke-width": "1.5",
+          "marker-start": "url(#tip-start)",
+          "marker-end": "url(#tip-end)"
+        },
+        group
+      );
+    });
+  }
+
+  function activateNode(nodeId) {
+    if (state.contradictionMode) {
+      handleContradictionNodeActivation(nodeId);
+      return;
+    }
+
+    state.activeSystem = nodeId.endsWith("_2") ? 2 : 1;
+
+    if (state.activeNodeId === nodeId) {
+      state.activeNodeId = null;
+      hideEditor();
+    } else {
+      state.activeNodeId = nodeId;
+      showEditor(nodeId);
+    }
+
+    updateAllNodeVisuals();
+  }
+
+  function renderNodeGroups(nodes) {
+    nodes.forEach((node) => {
+      const systemLabel = getNodeSystemLabel(node.id);
+      const group = buildInteractiveGroup({
+        label: `${node.short}${systemLabel}: empty. Activate to edit.`,
+        onActivate: () => activateNode(node.id)
+      });
+
+      group.addEventListener("mouseenter", () => renderTooltip(node));
+      group.addEventListener("mouseleave", hideTooltip);
+      group.addEventListener("focusin", () => renderTooltip(node));
+      group.addEventListener("focusout", hideTooltip);
+
+      dom.svg.appendChild(group);
+      createSvgElement(
+        "circle",
+        { cx: node.x, cy: node.y, r: GEOMETRY.nodeRadius + 5, class: "node-focus-ring" },
+        group
+      );
+      const circle = createSvgElement(
+        "circle",
+        {
+          cx: node.x,
+          cy: node.y,
+          r: GEOMETRY.nodeRadius,
+          fill: "white",
+          stroke: DIAGRAM_COLORS.stroke,
+          "stroke-width": "1.5"
+        },
+        group
+      );
+      const dot = createSvgElement(
+        "circle",
+        {
+          cx: node.x,
+          cy: node.y,
+          r: 4,
+          fill: "transparent",
+          "aria-hidden": "true"
+        },
+        group
+      );
+      const primaryLabel = appendTextElement(
+        group,
+        "text",
+        {
+          x: node.x + node.labelOffsetX,
+          y: node.y + node.labelOffsetY,
+          "text-anchor": node.anchor,
+          "font-size": "12",
+          "font-weight": "600",
+          fill: DIAGRAM_COLORS.text,
+          "aria-hidden": "true"
+        },
+        node.lines[0]
+      );
+
+      let secondaryLabel = null;
+      if (node.lines[1]) {
+        secondaryLabel = appendTextElement(
+          group,
+          "text",
+          {
+            x: node.x + node.labelOffsetX,
+            y: node.y + node.secondaryLabelOffsetY,
+            "text-anchor": node.anchor,
+            "font-size": "12",
+            "font-weight": "600",
+            fill: DIAGRAM_COLORS.text,
+            "aria-hidden": "true"
+          },
+          node.lines[1]
+        );
+      }
+
+      const previewY = node.labelOffsetY < 0
+        ? node.labelOffsetY - 14
+        : (node.secondaryLabelOffsetY ? node.secondaryLabelOffsetY + 14 : node.labelOffsetY + 14);
+      const previewGroup = createSvgElement("g", {}, group);
+      const previewHighlight = createSvgElement(
+        "rect",
+        {
+          rx: "3",
+          ry: "3",
+          fill: DIAGRAM_COLORS.highlight,
+          display: "none",
+          "aria-hidden": "true"
+        },
+        previewGroup
+      );
+      const preview = appendTextElement(
+        previewGroup,
+        "text",
+        {
+          x: node.x + node.labelOffsetX,
+          y: node.y + previewY,
+          "text-anchor": node.anchor,
+        "font-size": "9",
+        fill: DIAGRAM_COLORS.muted,
+        "font-style": "italic",
+        "aria-hidden": "true"
+        },
+        ""
+      );
+      attachPreviewTooltip({
+        hoverTarget: previewGroup,
+        anchorElement: preview,
+        getValue: () => getStoreForNode(node.id)[getBaseNodeId(node.id)],
+        onLeave: () => renderTooltip(node),
+        preferredTop: node.labelOffsetY >= 0
+      });
+
+      svgState.nodeElements.set(node.id, {
+        group,
+        circle,
+        dot,
+        primaryLabel,
+        secondaryLabel,
+        previewHighlight,
+        preview
+      });
+    });
+  }
+
+  function buildSvg() {
+    dom.svg.replaceChildren();
+    svgState.nodeElements = new Map();
+    svgState.contradictionLayer = null;
+    svgState.sharedObjectGroup = null;
+    svgState.sharedObjectPreview = null;
+    svgState.sharedObjectPreviewHighlight = null;
+    svgState.sharedOutcomeGroup = null;
+    svgState.sharedOutcomePreview = null;
+    svgState.sharedOutcomePreviewHighlight = null;
+    svgState.outcomeGroup = null;
+    svgState.outcomePreview = null;
+    svgState.outcomePreviewHighlight = null;
+
+    const viewBoxWidth = state.dualMode ? FULL_VIEWBOX_WIDTH : GEOMETRY.width;
+    dom.svg.setAttribute("viewBox", `0 0 ${viewBoxWidth} ${GEOMETRY.height}`);
+    dom.svg.setAttribute(
+      "aria-label",
+      state.dualMode
+        ? "Engeström Activity System — two activity triangles with shared object"
+        : "Engeström Activity System Triangle — six interactive nodes: Tools, Subject, Object, Rules, Community, Division of Labour"
+    );
+
+    const definitions = createSvgElement("defs", {}, dom.svg);
+    buildMarkers(definitions);
+
+    getRenderedEdges().forEach(([nodes, edges]) => {
+      renderEdges(nodes, edges);
+    });
+
+    renderSharedControls();
+
+    svgState.contradictionLayer = createSvgElement("g", { "aria-hidden": "true" }, dom.svg);
+    renderNodeGroups(NODE_DEFINITIONS);
+
+    if (state.dualMode) {
+      renderNodeGroups(SECONDARY_NODE_DEFINITIONS);
+    }
+
+    renderContradictions();
+    updateSharedPreviews();
+    updateAllNodeVisuals();
+  }
+
+  function showEditor(nodeId) {
+    const baseNodeId = getBaseNodeId(nodeId);
+    const nodeDefinition = getNodeDefinition(nodeId);
+    const store = getStoreForNode(nodeId);
+    const systemLabel = state.dualMode ? ` — System ${state.activeSystem}` : "";
+
+    state.activeEditorTarget = { type: "node", nodeId };
+    dom.editor.hidden = false;
+    dom.editor.style.border = `2px solid ${NODE_COLOR}`;
+    dom.editorLabel.style.color = NODE_COLOR;
+    dom.editorLabel.textContent = `${nodeDefinition.label}${systemLabel}`;
+    dom.editorGuidance.textContent = nodeDefinition.guidance;
+    dom.editorPrompt.textContent = nodeDefinition.prompt;
+    dom.editorInput.value = store[baseNodeId];
+    dom.editorInput.focus();
+
+    dom.editorInput.oninput = () => {
+      setNodeValue(nodeId, dom.editorInput.value, { syncEditor: false });
+      updateSummary();
+    };
+  }
+
+  function showSharedEditor(editorType) {
+    const isSharedObject = editorType === "sharedObject";
+    const isSharedOutcome = editorType === "sharedOutcome";
+
+    state.activeEditorTarget = { type: "shared", field: editorType };
+    dom.editor.hidden = false;
+    dom.editor.style.border = `2px solid ${DIAGRAM_COLORS.stroke}`;
+    dom.editorLabel.style.color = DIAGRAM_COLORS.text;
+
+    if (isSharedObject) {
+      dom.editorLabel.textContent = "Shared Object";
+      dom.editorGuidance.textContent = "What do both activity systems share as their common object or goal?";
+      dom.editorPrompt.textContent = "What is the shared object or goal connecting both systems?";
+      dom.editorInput.value = state.sharedObject;
+    } else if (isSharedOutcome) {
+      dom.editorLabel.textContent = "Shared Outcome(s)";
+      dom.editorGuidance.textContent = "What is the shared outcome produced by both activity systems working together?";
+      dom.editorPrompt.textContent = "What outcome do both systems jointly produce?";
+      dom.editorInput.value = state.sharedOutcome;
+    } else {
+      dom.editorLabel.textContent = "Outcome";
+      dom.editorGuidance.textContent = "The result of the object's transformation through the activity — what the activity produces or changes.";
+      dom.editorPrompt.textContent = "What does the activity produce? What change or result occurs through the transformation of the object?";
+      dom.editorInput.value = state.outcome;
+    }
+
+    dom.editorInput.focus();
+    dom.editorInput.oninput = () => {
+      if (isSharedObject) {
+        setSharedValue("sharedObject", dom.editorInput.value, { syncEditor: false });
+      } else if (isSharedOutcome) {
+        setSharedValue("sharedOutcome", dom.editorInput.value, { syncEditor: false });
+      } else {
+        setSharedValue("outcome", dom.editorInput.value, { syncEditor: false });
+      }
+
+      updateSummary();
+    };
+
+    state.activeNodeId = null;
+    updateAllNodeVisuals();
+  }
+
+  function hideEditor() {
+    dom.editor.hidden = true;
+    state.activeEditorTarget = null;
+  }
+
+  function updateSharedPreviews() {
+    const truncatePreview = (value) => getPreviewText(value, 24);
+
+    if (svgState.sharedObjectPreview) {
+      svgState.sharedObjectPreview.textContent = truncatePreview(state.sharedObject);
+      updateTextHighlightRect(svgState.sharedObjectPreview, svgState.sharedObjectPreviewHighlight);
+    }
+
+    if (svgState.sharedOutcomePreview) {
+      svgState.sharedOutcomePreview.textContent = truncatePreview(state.sharedOutcome);
+      updateTextHighlightRect(svgState.sharedOutcomePreview, svgState.sharedOutcomePreviewHighlight);
+    }
+
+    if (svgState.outcomePreview) {
+      svgState.outcomePreview.textContent = truncatePreview(state.outcome);
+      updateTextHighlightRect(svgState.outcomePreview, svgState.outcomePreviewHighlight);
+    }
+
+    updateSharedGroupAriaLabels();
+  }
+
+  function renderContradictions() {
+    if (!svgState.contradictionLayer) {
+      return;
+    }
+
+    svgState.contradictionLayer.replaceChildren();
+
+    state.contradictions.forEach((contradiction) => {
+      if (contradiction.type === "primary") {
+        const node = ALL_NODE_MAP.get(contradiction.nodes[0]);
+        if (!node) {
+          return;
+        }
+
+        createSvgElement(
+          "circle",
+          {
+            cx: node.x,
+            cy: node.y,
+            r: GEOMETRY.nodeRadius + 7,
+            fill: "none",
+            stroke: DIAGRAM_COLORS.contradiction,
+            "stroke-width": "2",
+            "stroke-dasharray": "3,2.5"
+          },
+          svgState.contradictionLayer
+        );
+        return;
+      }
+
+      const firstNode = ALL_NODE_MAP.get(contradiction.nodes[0]);
+      const secondNode = ALL_NODE_MAP.get(contradiction.nodes[1]);
+      if (!firstNode || !secondNode) {
+        return;
+      }
+
+      const midpointX = (firstNode.x + secondNode.x) / 2;
+      const midpointY = (firstNode.y + secondNode.y) / 2;
+      const isInterSystemic = contradiction.type === "intersystemic";
+
+      createSvgElement(
+        "line",
+        {
+          x1: firstNode.x,
+          y1: firstNode.y,
+          x2: secondNode.x,
+          y2: secondNode.y,
+          stroke: isInterSystemic ? DIAGRAM_COLORS.intersystemic : DIAGRAM_COLORS.contradiction,
+          "stroke-width": "2",
+          "stroke-dasharray": isInterSystemic ? "8,4" : "6,3",
+          opacity: isInterSystemic ? "0.75" : "0.8"
+        },
+        svgState.contradictionLayer
+      );
+
+      appendTextElement(
+        svgState.contradictionLayer,
+        "text",
+        {
+          x: midpointX,
+          y: midpointY - (isInterSystemic ? 8 : 7),
+          "text-anchor": "middle",
+          "font-size": isInterSystemic ? "14" : "13",
+          fill: isInterSystemic ? DIAGRAM_COLORS.intersystemic : DIAGRAM_COLORS.contradiction
+        },
+        isInterSystemic ? "↔" : "⚡"
+      );
+    });
+  }
+
+  function setContradictionMode(isEnabled) {
+    state.contradictionMode = isEnabled;
+    state.contradictionFirstNodeId = null;
+    state.contradictionPromptNodes = null;
+    dom.contradictionEditor.hidden = true;
+    dom.contradictionButton.classList.toggle("btn-contra-active", isEnabled);
+    dom.contradictionButton.setAttribute("aria-pressed", String(isEnabled));
+
+    if (isEnabled) {
+      hideEditor();
+      state.activeNodeId = null;
+    }
+
+    syncGuidanceUi();
+    syncContradictionGuideUi();
+    updateAllNodeVisuals();
+  }
+
+  function showContradictionPrompt(type, nodeIds) {
+    state.contradictionPromptNodes = nodeIds;
+    dom.contradictionEditor.hidden = false;
+
+    if (type === "primary") {
+      const node = getNodeDefinition(nodeIds[0]);
+      dom.contradictionLabel.textContent = `⚡ Primary Contradiction — ${node.short}`;
+      dom.contradictionTypeDescription.textContent = "A tension within this single component. Describe what is pulling against itself.";
+    } else if (type === "secondary") {
+      const firstNode = getNodeDefinition(nodeIds[0]);
+      const secondNode = getNodeDefinition(nodeIds[1]);
+      dom.contradictionLabel.textContent = `⚡ Secondary Contradiction — ${firstNode.short} ↔ ${secondNode.short}`;
+      dom.contradictionTypeDescription.textContent = "A tension between these two components. Describe how they pull in different directions.";
+    } else {
+      const firstNode = getNodeDefinition(nodeIds[0]);
+      const secondNode = getNodeDefinition(nodeIds[1]);
+      const firstSystem = nodeIds[0].endsWith("_2") ? 2 : 1;
+      const secondSystem = nodeIds[1].endsWith("_2") ? 2 : 1;
+      dom.contradictionLabel.textContent = `↔ Inter-systemic Contradiction — ${firstNode.short} (Sys ${firstSystem}) ↔ ${secondNode.short} (Sys ${secondSystem})`;
+      dom.contradictionTypeDescription.textContent = "A tension between the two activity systems. Describe how their goals, rules, or tools conflict across the boundary.";
+    }
+
+    dom.contradictionInput.value = "";
+    dom.contradictionInput.focus();
+    dom.contradictionSaveButton.onclick = () => saveContradiction(type, nodeIds);
+  }
+
+  function cancelContradictionPrompt() {
+    state.contradictionPromptNodes = null;
+    state.contradictionFirstNodeId = null;
+    dom.contradictionEditor.hidden = true;
+    updateAllNodeVisuals();
+  }
+
+  function saveContradiction(type, nodeIds) {
+    const description = dom.contradictionInput.value.trim();
+    state.contradictions.push({ type, nodes: nodeIds, description });
+    renderContradictions();
+
+    const firstNode = getNodeDefinition(nodeIds[0]);
+    let message = "";
+
+    if (type === "primary") {
+      message = `Primary contradiction saved for ${firstNode.short}.`;
+    } else if (type === "secondary") {
+      const secondNode = getNodeDefinition(nodeIds[1]);
+      message = `Secondary contradiction saved between ${firstNode.short} and ${secondNode.short}.`;
+    } else {
+      const secondNode = getNodeDefinition(nodeIds[1]);
+      message = `Inter-systemic contradiction saved between ${firstNode.short} and ${secondNode.short}.`;
+    }
+
+    announce(message);
+    cancelContradictionPrompt();
+    updateSummary();
+  }
+
+  function handleContradictionNodeActivation(nodeId) {
+    if (state.contradictionPromptNodes !== null) {
+      return;
+    }
+
+    if (state.contradictionFirstNodeId === null) {
+      state.contradictionFirstNodeId = nodeId;
+      updateAllNodeVisuals();
+
+      const node = getNodeDefinition(nodeId);
+      const message = state.dualMode
+        ? `${node.short} selected. Activate the same node again for a primary contradiction, another node in the same system for a secondary contradiction, or a node in the other system for an inter-systemic contradiction.`
+        : `${node.short} selected. Activate the same node again for a primary contradiction, or another node for a secondary contradiction.`;
+
+      announce(message);
+      return;
+    }
+
+    if (state.contradictionFirstNodeId === nodeId) {
+      showContradictionPrompt("primary", [nodeId]);
+      return;
+    }
+
+    const isCrossSystem =
+      state.dualMode &&
+      (state.contradictionFirstNodeId.endsWith("_2") !== nodeId.endsWith("_2"));
+
+    showContradictionPrompt(
+      isCrossSystem ? "intersystemic" : "secondary",
+      [state.contradictionFirstNodeId, nodeId]
+    );
+  }
+
+  let _summaryRowId = 0;
+
+  function createSummaryInput(label, value, onInput, placeholder = "Add analysis…", id = null) {
+    const input = document.createElement("textarea");
+    input.className = "sr-input";
+    input.rows = 1;
+    input.placeholder = placeholder;
+    if (id) {
+      input.id = id;
+    } else {
+      input.setAttribute("aria-label", label);
+    }
+    input.value = value;
+    autoResizeTextarea(input);
+    input.addEventListener("input", () => {
+      autoResizeTextarea(input);
+      onInput(input.value);
+    });
+    return input;
+  }
+
+  function createSummaryRow(label, value, onInput, placeholder) {
+    const id = `sr-field-${++_summaryRowId}`;
+    const row = document.createElement("div");
+    row.className = "sr-row";
+
+    const labelElement = document.createElement("label");
+    labelElement.className = "sr-label";
+    labelElement.htmlFor = id;
+    labelElement.textContent = label;
+
+    const valueElement = createSummaryInput(label, value, onInput, placeholder, id);
+
+    row.append(labelElement, valueElement);
+    return row;
+  }
+
+  function createSummaryDivider() {
+    const divider = document.createElement("hr");
+    divider.className = "sr-divider";
+    divider.setAttribute("aria-hidden", "true");
+    return divider;
+  }
+
+  function createSummaryHeading(text) {
+    const heading = document.createElement("h3");
+    heading.className = "sr-sys-heading";
+    heading.textContent = text;
+    return heading;
+  }
+
+  function createSummaryGroupHeading(text) {
+    const heading = document.createElement("h4");
+    heading.className = "sr-group-heading";
+    heading.textContent = text;
+    return heading;
+  }
+
+  function createContradictionEditor(contradiction, index) {
+    const firstNode = ALL_NODE_MAP.get(contradiction.nodes[0]);
+    if (!firstNode) {
+      return null;
+    }
+
+    const contradictionElement = document.createElement("div");
+    const firstSystemLabel = getNodeSystemLabel(contradiction.nodes[0]);
+
+    let title = "";
+    if (contradiction.type === "primary") {
+      contradictionElement.className = "sr-contra";
+      title = `⚡ Primary — ${firstNode.short}${firstSystemLabel}`;
+    } else if (contradiction.type === "secondary") {
+      const secondNode = ALL_NODE_MAP.get(contradiction.nodes[1]);
+      const secondSystemLabel = contradiction.nodes[1]
+        ? getNodeSystemLabel(contradiction.nodes[1])
+        : "";
+      contradictionElement.className = "sr-contra";
+      title = `⚡ Secondary — ${firstNode.short}${firstSystemLabel} ↔ ${secondNode ? `${secondNode.short}${secondSystemLabel}` : "?"}`;
+    } else {
+      const secondNode = ALL_NODE_MAP.get(contradiction.nodes[1]);
+      const firstSystem = contradiction.nodes[0].endsWith("_2") ? 2 : 1;
+      const secondSystem = contradiction.nodes[1].endsWith("_2") ? 2 : 1;
+      contradictionElement.className = "sr-contra-inter";
+      title = `↔ Inter-systemic — ${firstNode.short} (System ${firstSystem}) ↔ ${secondNode ? secondNode.short : "?"} (System ${secondSystem})`;
+    }
+
+    const titleElement = document.createElement("div");
+    titleElement.className = "sr-contra-title";
+    titleElement.textContent = title;
+
+    const input = createSummaryInput(
+      `${title} description`,
+      contradiction.description,
+      (nextValue) => {
+        state.contradictions[index].description = nextValue;
+      },
+      "Describe this tension…"
+    );
+    input.classList.add("sr-contra-input");
+
+    contradictionElement.append(titleElement, input);
+    return contradictionElement;
+  }
+
+  function renderSummarySection(fragment, store, systemNumber, title = null) {
+    if (title) {
+      fragment.appendChild(createSummaryHeading(title));
+    }
+
+    SUMMARY_THEMES.forEach((theme) => {
+      fragment.appendChild(createSummaryGroupHeading(theme.title));
+      theme.nodeIds.forEach((nodeId) => {
+        const node = NODE_MAP.get(nodeId);
+        if (node) {
+          const renderedNodeId = systemNumber === 2 ? `${nodeId}_2` : nodeId;
+          fragment.appendChild(
+            createSummaryRow(
+              node.short,
+              store[nodeId],
+              (nextValue) => {
+                setNodeValue(renderedNodeId, nextValue);
+              },
+              node.prompt
+            )
+          );
+        }
+      });
+    });
+  }
+
+  function updateSummary() {
+    const fragment = document.createDocumentFragment();
+
+    if (state.dualMode) {
+      renderSummarySection(fragment, state.valuesBySystem[1], 1, "System 1");
+      fragment.appendChild(createSummaryDivider());
+      renderSummarySection(fragment, state.valuesBySystem[2], 2, "System 2");
+      fragment.appendChild(createSummaryDivider());
+      fragment.appendChild(createSummaryHeading("Shared elements"));
+      fragment.appendChild(
+        createSummaryRow(
+          "Shared Object",
+          state.sharedObject,
+          (nextValue) => {
+            setSharedValue("sharedObject", nextValue);
+          },
+          "What common object or goal connects the two systems?"
+        )
+      );
+      fragment.appendChild(
+        createSummaryRow(
+          "Shared Outcome(s)",
+          state.sharedOutcome,
+          (nextValue) => {
+            setSharedValue("sharedOutcome", nextValue);
+          },
+          "What do both systems jointly produce?"
+        )
+      );
+    } else {
+      renderSummarySection(fragment, state.valuesBySystem[1], 1, "Activity system");
+      fragment.appendChild(createSummaryDivider());
+      fragment.appendChild(createSummaryHeading("Outcome"));
+      fragment.appendChild(
+        createSummaryRow(
+          "Outcome",
+          state.outcome,
+          (nextValue) => {
+            setSharedValue("outcome", nextValue);
+          },
+          "What does the activity produce or change?"
+        )
+      );
+    }
+
+    if (state.contradictions.length) {
+      fragment.append(createSummaryDivider(), createSummaryHeading("System tensions"));
+
+      state.contradictions.forEach((contradiction, index) => {
+        const contradictionElement = createContradictionEditor(contradiction, index);
+        if (!contradictionElement) {
+          return;
+        }
+
+        fragment.appendChild(contradictionElement);
+      });
+    }
+
+    dom.summaryBody.replaceChildren(fragment);
+  }
+
+  function buildExportData() {
+    const notes = dom.notesInput.value.trim();
+
+    const formatContradiction = (contradiction) => ({
+      type: contradiction.type,
+      nodes: contradiction.nodes.map((nodeId) => {
+        const baseNodeId = getBaseNodeId(nodeId);
+        const shortLabel = NODE_MAP.get(baseNodeId)?.short || baseNodeId;
+        return state.dualMode
+          ? `${shortLabel} (System ${nodeId.endsWith("_2") ? 2 : 1})`
+          : shortLabel;
+      }),
+      description: contradiction.description
+    });
+
+    if (!state.dualMode) {
+      return {
+        nodes: NODE_DEFINITIONS.map((node) => ({
+          id: node.id,
+          label: node.label,
+          value: state.valuesBySystem[1][node.id]
+        })),
+        outcome: state.outcome,
+        contradictions: state.contradictions.map(formatContradiction),
+        notes
+      };
+    }
+
+    return {
+      system1: {
+        nodes: NODE_DEFINITIONS.map((node) => ({
+          id: node.id,
+          label: node.label,
+          value: state.valuesBySystem[1][node.id]
+        })),
+        contradictions: state.contradictions
+          .filter((contradiction) => contradiction.type !== "intersystemic" && !contradiction.nodes[0].endsWith("_2"))
+          .map(formatContradiction)
+      },
+      system2: {
+        nodes: NODE_DEFINITIONS.map((node) => ({
+          id: node.id,
+          label: node.label,
+          value: state.valuesBySystem[2][node.id]
+        })),
+        contradictions: state.contradictions
+          .filter((contradiction) => contradiction.type !== "intersystemic" && contradiction.nodes[0].endsWith("_2"))
+          .map(formatContradiction)
+      },
+      intersystemicContradictions: state.contradictions
+        .filter((contradiction) => contradiction.type === "intersystemic")
+        .map(formatContradiction),
+      sharedObject: state.sharedObject,
+      sharedOutcome: state.sharedOutcome,
+      notes
+    };
+  }
+
+  function getContradictionTag(type) {
+    if (type === "primary") {
+      return "Primary contradiction";
+    }
+    if (type === "secondary") {
+      return "Secondary contradiction";
+    }
+    return "Inter-systemic contradiction";
+  }
+
+  function exportContradictionsAsText(contradictions) {
+    if (!contradictions.length) {
+      return [];
+    }
+
+    const lines = ["Contradictions", "-".repeat(14)];
+    contradictions.forEach((contradiction) => {
+      const subject = contradiction.nodes.length === 1
+        ? contradiction.nodes[0]
+        : `${contradiction.nodes[0]} ↔ ${contradiction.nodes[1]}`;
+      lines.push(`[${getContradictionTag(contradiction.type)}] ${subject}${contradiction.description ? `\n${contradiction.description}` : ""}\n`);
+    });
+    return lines;
+  }
+
+  function exportText() {
+    const exportData = buildExportData();
+    const lines = ["Engeström Activity System Analysis", "=".repeat(36), ""];
+
+    if (state.dualMode) {
+      lines.push("System 1", "-".repeat(8), "");
+      exportData.system1.nodes.forEach((node) => {
+        lines.push(`${node.label}:\n${node.value || "(empty)"}\n`);
+      });
+      lines.push(...exportContradictionsAsText(exportData.system1.contradictions));
+      lines.push("", "System 2", "-".repeat(8), "");
+      exportData.system2.nodes.forEach((node) => {
+        lines.push(`${node.label}:\n${node.value || "(empty)"}\n`);
+      });
+      lines.push(...exportContradictionsAsText(exportData.system2.contradictions));
+
+      if (exportData.intersystemicContradictions.length) {
+        lines.push("", "Inter-systemic Contradictions", "-".repeat(29));
+        exportData.intersystemicContradictions.forEach((contradiction) => {
+          const subject = `${contradiction.nodes[0]} ↔ ${contradiction.nodes[1]}`;
+          lines.push(`[Inter-systemic contradiction] ${subject}${contradiction.description ? `\n${contradiction.description}` : ""}\n`);
+        });
+      }
+
+      lines.push("", "Shared elements", "-".repeat(15), "");
+      lines.push(`Shared Object:\n${exportData.sharedObject || "(empty)"}\n`);
+      lines.push(`Shared Outcome(s):\n${exportData.sharedOutcome || "(empty)"}\n`);
+    } else {
+      exportData.nodes.forEach((node) => {
+        lines.push(`${node.label}:\n${node.value || "(empty)"}\n`);
+      });
+      lines.push(`Outcome:\n${exportData.outcome || "(empty)"}\n`);
+      lines.push(...exportContradictionsAsText(exportData.contradictions));
+    }
+
+    if (exportData.notes) {
+      lines.push("Notes", "-".repeat(14), exportData.notes);
+    }
+
+    return lines.join("\n");
+  }
+
+  function exportContradictionsAsMarkdown(contradictions) {
+    if (!contradictions.length) {
+      return [];
+    }
+
+    const lines = ["", "### Contradictions", ""];
+    contradictions.forEach((contradiction) => {
+      const subject = contradiction.nodes.length === 1
+        ? contradiction.nodes[0]
+        : `${contradiction.nodes[0]} ↔ ${contradiction.nodes[1]}`;
+      lines.push(`- **${getContradictionTag(contradiction.type)} — ${subject}**${contradiction.description ? `: ${contradiction.description}` : ""}`);
+    });
+    return lines;
+  }
+
+  function exportMarkdown() {
+    const exportData = buildExportData();
+    const lines = ["# Engeström Activity System Analysis", ""];
+
+    if (state.dualMode) {
+      lines.push("## System 1", "", "| Component | Content |", "|-----------|---------|");
+      exportData.system1.nodes.forEach((node) => {
+        lines.push(`| **${node.label}** | ${node.value || "—"} |`);
+      });
+      lines.push(...exportContradictionsAsMarkdown(exportData.system1.contradictions));
+
+      lines.push("", "## System 2", "", "| Component | Content |", "|-----------|---------|");
+      exportData.system2.nodes.forEach((node) => {
+        lines.push(`| **${node.label}** | ${node.value || "—"} |`);
+      });
+      lines.push(...exportContradictionsAsMarkdown(exportData.system2.contradictions));
+
+      if (exportData.intersystemicContradictions.length) {
+        lines.push("", "## Inter-systemic Contradictions", "");
+        exportData.intersystemicContradictions.forEach((contradiction) => {
+          const subject = `${contradiction.nodes[0]} ↔ ${contradiction.nodes[1]}`;
+          lines.push(`- **Inter-systemic contradiction — ${subject}**${contradiction.description ? `: ${contradiction.description}` : ""}`);
+        });
+      }
+
+      lines.push("", "## Shared Elements", "");
+      lines.push(`| **Shared Object** | ${exportData.sharedObject || "—"} |`);
+      lines.push(`| **Shared Outcome(s)** | ${exportData.sharedOutcome || "—"} |`);
+    } else {
+      lines.push("| Component | Content |", "|-----------|---------|");
+      exportData.nodes.forEach((node) => {
+        lines.push(`| **${node.label}** | ${node.value || "—"} |`);
+      });
+      lines.push(`| **Outcome** | ${exportData.outcome || "—"} |`);
+
+      if (exportData.contradictions.length) {
+        lines.push("", "## Contradictions", "");
+        exportData.contradictions.forEach((contradiction) => {
+          const subject = contradiction.nodes.length === 1
+            ? contradiction.nodes[0]
+            : `${contradiction.nodes[0]} ↔ ${contradiction.nodes[1]}`;
+          const contradictionLabel = contradiction.type === "primary"
+            ? "Primary contradiction"
+            : "Secondary contradiction";
+          lines.push(`- **${contradictionLabel} — ${subject}**${contradiction.description ? `: ${contradiction.description}` : ""}`);
+        });
+      }
+    }
+
+    if (exportData.notes) {
+      lines.push("", "## Notes", "", exportData.notes);
+    }
+
+    return lines.join("\n");
+  }
+
+  function exportJson() {
+    return JSON.stringify(buildExportData(), null, 2);
+  }
+
+  function buildTemplateInstructions(mode) {
+    return {
+      purpose: "Fill this template from a source text, then import the completed JSON into the Activity System Analyser.",
+      mode,
+      rules: [
+        "Preserve the JSON structure and every existing key.",
+        "Only fill string values such as node.value, outcome, sharedObject, sharedOutcome and notes.",
+        "Keep each node.id unchanged so the importer can match fields correctly.",
+        "Leave contradictions as empty arrays unless the source text explicitly describes contradictions."
+      ]
+    };
+  }
+
+  function buildTemplateNodeEntries() {
+    return NODE_DEFINITIONS.map((node) => ({
+      id: node.id,
+      label: node.label,
+      guidance: node.guidance,
+      prompt: node.prompt,
+      value: ""
+    }));
+  }
+
+  function buildJsonTemplateData() {
+    if (!state.dualMode) {
+      return {
+        _template: buildTemplateInstructions("single-system"),
+        nodes: buildTemplateNodeEntries(),
+        outcome: "",
+        contradictions: [],
+        notes: ""
+      };
+    }
+
+    return {
+      _template: buildTemplateInstructions("dual-system"),
+      system1: {
+        nodes: buildTemplateNodeEntries(),
+        contradictions: []
+      },
+      system2: {
+        nodes: buildTemplateNodeEntries(),
+        contradictions: []
+      },
+      intersystemicContradictions: [],
+      sharedObject: "",
+      sharedOutcome: "",
+      notes: ""
+    };
+  }
+
+  function exportJsonTemplate() {
+    return JSON.stringify(buildJsonTemplateData(), null, 2);
+  }
+
+  function getDiagramDimensions() {
+    return {
+      width: state.dualMode ? FULL_VIEWBOX_WIDTH : GEOMETRY.width,
+      height: GEOMETRY.height
+    };
+  }
+
+  function createDiagramSvgMarkup() {
+    const { width, height } = getDiagramDimensions();
+    const svgClone = dom.svg.cloneNode(true);
+    const background = document.createElementNS(SVG_NS, "rect");
+    background.setAttribute("x", "0");
+    background.setAttribute("y", "0");
+    background.setAttribute("width", String(width));
+    background.setAttribute("height", String(height));
+    background.setAttribute("fill", "#ffffff");
+    svgClone.insertBefore(background, svgClone.firstChild);
+    svgClone.setAttribute("xmlns", SVG_NS);
+    svgClone.setAttribute("xmlns:xlink", "http://www.w3.org/1999/xlink");
+    svgClone.setAttribute("width", String(width));
+    svgClone.setAttribute("height", String(height));
+    return new XMLSerializer().serializeToString(svgClone);
+  }
+
+  function downloadDiagramAsSvg() {
+    downloadFile(
+      createDiagramSvgMarkup(),
+      "activity-system-diagram.svg",
+      "image/svg+xml;charset=utf-8"
+    );
+  }
+
+  function loadImage(source) {
+    return new Promise((resolve, reject) => {
+      const image = new Image();
+      image.onload = () => resolve(image);
+      image.onerror = () => reject(new Error("Unable to render the diagram as an image."));
+      image.src = source;
+    });
+  }
+
+  async function downloadDiagramAsPng() {
+    const { width, height } = getDiagramDimensions();
+    const svgMarkup = createDiagramSvgMarkup();
+    const svgBlob = new Blob([svgMarkup], { type: "image/svg+xml;charset=utf-8" });
+    const objectUrl = URL.createObjectURL(svgBlob);
+
+    try {
+      const image = await loadImage(objectUrl);
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+      const context = canvas.getContext("2d");
+
+      if (!context) {
+        throw new Error("Unable to prepare the PNG export.");
+      }
+
+      context.fillStyle = "#ffffff";
+      context.fillRect(0, 0, width, height);
+      context.drawImage(image, 0, 0, width, height);
+
+      const pngUrl = canvas.toDataURL("image/png");
+      const link = document.createElement("a");
+      link.href = pngUrl;
+      link.download = "activity-system-diagram.png";
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } finally {
+      URL.revokeObjectURL(objectUrl);
+    }
+  }
+
+  function isPlainObject(value) {
+    return typeof value === "object" && value !== null && !Array.isArray(value);
+  }
+
+  function toTextValue(value) {
+    return typeof value === "string" ? value : "";
+  }
+
+  function getEmptyImportState() {
+    return {
+      system1: createEmptyNodeValues(),
+      system2: createEmptyNodeValues(),
+      contradictions: [],
+      dualMode: false,
+      outcome: "",
+      sharedObject: "",
+      sharedOutcome: "",
+      notes: ""
+    };
+  }
+
+  function readImportedNodeValues(nodes) {
+    const values = createEmptyNodeValues();
+    if (!Array.isArray(nodes)) {
+      return values;
+    }
+
+    nodes.forEach((node) => {
+      if (!isPlainObject(node) || !NODE_MAP.has(node.id)) {
+        return;
+      }
+
+      values[node.id] = toTextValue(node.value);
+    });
+
+    return values;
+  }
+
+  function getMissingImportedNodeIds(nodes) {
+    const seenNodeIds = new Set();
+
+    if (!Array.isArray(nodes)) {
+      return [...REQUIRED_NODE_IDS];
+    }
+
+    nodes.forEach((node) => {
+      if (isPlainObject(node) && typeof node.id === "string" && NODE_MAP.has(node.id)) {
+        seenNodeIds.add(node.id);
+      }
+    });
+
+    return REQUIRED_NODE_IDS.filter((nodeId) => !seenNodeIds.has(nodeId));
+  }
+
+  function validateImportedNodeList(nodes, sectionLabel) {
+    const missingNodeIds = getMissingImportedNodeIds(nodes);
+    if (!missingNodeIds.length) {
+      return;
+    }
+
+    const missingLabels = missingNodeIds.map((nodeId) => NODE_MAP.get(nodeId)?.label || nodeId);
+    throw new Error(`The JSON import is missing required ${sectionLabel} entries: ${missingLabels.join(", ")}.`);
+  }
+
+  function parseImportedNodeReference(reference, fallbackSystem) {
+    if (typeof reference !== "string") {
+      return null;
+    }
+
+    const match = reference.trim().match(/^(.*?)(?: \(System ([12])\))?$/);
+    if (!match) {
+      return null;
+    }
+
+    const [, shortLabel, explicitSystem] = match;
+    const nodeDefinition = NODE_DEFINITIONS.find((node) => node.short === shortLabel.trim());
+    if (!nodeDefinition) {
+      return null;
+    }
+
+    const system = explicitSystem ? Number(explicitSystem) : fallbackSystem;
+    if (system !== 1 && system !== 2) {
+      return null;
+    }
+
+    return system === 2 ? `${nodeDefinition.id}_2` : nodeDefinition.id;
+  }
+
+  function parseImportedContradictions(contradictions, fallbackSystem) {
+    if (!Array.isArray(contradictions)) {
+      return [];
+    }
+
+    return contradictions.reduce((result, contradiction) => {
+      if (!isPlainObject(contradiction) || !Array.isArray(contradiction.nodes)) {
+        return result;
+      }
+
+      const type = contradiction.type;
+      const validType =
+        type === "primary" ||
+        type === "secondary" ||
+        type === "intersystemic";
+
+      if (!validType) {
+        return result;
+      }
+
+      const nodeIds = contradiction.nodes
+        .map((nodeReference) => parseImportedNodeReference(nodeReference, fallbackSystem))
+        .filter(Boolean);
+
+      const expectedLength = type === "primary" ? 1 : 2;
+      if (nodeIds.length !== expectedLength) {
+        return result;
+      }
+
+      result.push({
+        type,
+        nodes: nodeIds,
+        description: toTextValue(contradiction.description)
+      });
+      return result;
+    }, []);
+  }
+
+  function parseImportedData(data) {
+    if (!isPlainObject(data)) {
+      throw new Error("The selected file does not contain a valid JSON object.");
+    }
+
+    const importedState = getEmptyImportState();
+    importedState.notes = toTextValue(data.notes);
+
+    if (Array.isArray(data.nodes)) {
+      validateImportedNodeList(data.nodes, "single-system node");
+      importedState.system1 = readImportedNodeValues(data.nodes);
+      importedState.outcome = toTextValue(data.outcome);
+      importedState.contradictions = parseImportedContradictions(data.contradictions, 1);
+      return importedState;
+    }
+
+    if (isPlainObject(data.system1) && isPlainObject(data.system2)) {
+      validateImportedNodeList(data.system1.nodes, "System 1 node");
+      validateImportedNodeList(data.system2.nodes, "System 2 node");
+      importedState.dualMode = true;
+      importedState.system1 = readImportedNodeValues(data.system1.nodes);
+      importedState.system2 = readImportedNodeValues(data.system2.nodes);
+      importedState.sharedObject = toTextValue(data.sharedObject);
+      importedState.sharedOutcome = toTextValue(data.sharedOutcome);
+      importedState.contradictions = [
+        ...parseImportedContradictions(data.system1.contradictions, 1),
+        ...parseImportedContradictions(data.system2.contradictions, 2),
+        ...parseImportedContradictions(data.intersystemicContradictions, null)
+      ];
+      return importedState;
+    }
+
+    throw new Error("The JSON format is not supported by this importer.");
+  }
+
+  function syncModeUi() {
+    dom.dualButton.setAttribute("aria-pressed", String(state.dualMode));
+    dom.dualButton.textContent = state.dualMode ? "Return to one system" : "Compare two systems";
+    dom.summaryHeading.textContent = state.dualMode ? "Analysis record — Two systems" : "Analysis record";
+    dom.app.classList.toggle("dual-active", state.dualMode);
+    syncContradictionGuideUi();
+  }
+
+  function isDiagramFullscreen() {
+    return document.fullscreenElement === dom.leftSection;
+  }
+
+  function syncFullscreenUi() {
+    const isFullscreen = isDiagramFullscreen();
+    dom.fullscreenButton.setAttribute("aria-pressed", String(isFullscreen));
+    dom.fullscreenButton.textContent = isFullscreen ? "Exit full screen" : "Full-screen diagram";
+  }
+
+  async function toggleDiagramFullscreen() {
+    try {
+      if (isDiagramFullscreen()) {
+        await document.exitFullscreen();
+      } else {
+        await dom.leftSection.requestFullscreen();
+      }
+    } catch (error) {
+      announce("Unable to change full-screen mode.");
+      syncFullscreenUi();
+      return;
+    }
+
+    announce(isDiagramFullscreen() ? "Diagram shown in full-screen mode." : "Full-screen mode closed.");
+  }
+
+  function applyImportedState(importedState) {
+    state.dualMode = importedState.dualMode;
+    state.valuesBySystem[1] = importedState.system1;
+    state.valuesBySystem[2] = importedState.system2;
+    state.outcome = importedState.outcome;
+    state.sharedObject = importedState.sharedObject;
+    state.sharedOutcome = importedState.sharedOutcome;
+    state.contradictions = importedState.contradictions;
+    state.activeNodeId = null;
+    state.activeSystem = 1;
+
+    hideEditor();
+    hideTooltip();
+    resetContradictionState();
+    closeAllMenus();
+    dom.notesInput.value = importedState.notes;
+    syncGuidanceUi();
+    syncModeUi();
+    buildSvg();
+    updateSummary();
+  }
+
+  async function importJsonFile(file) {
+    if (!(file instanceof File)) {
+      return;
+    }
+
+    const fileText = await file.text();
+    const importedData = parseImportedData(JSON.parse(fileText));
+    applyImportedState(importedData);
+    announce("JSON import completed.");
+  }
+
+  function exportInterfaceMarkdown() {
+    const lines = [
+      "# Activity System Analyser — Interface Content",
+      "",
+      "> This file contains all static text used in the interface: node definitions, guidance, prompts, and contradiction descriptions.",
+      "",
+      "---",
+      "",
+      "## Node definitions",
+      ""
+    ];
+
+    NODE_DEFINITIONS.forEach((node) => {
+      lines.push(`### ${node.label}`, "");
+      lines.push(`**Guidance:** ${node.guidance}`, "");
+      lines.push(`**Prompt:** *${node.prompt}*`, "");
+    });
+
+    lines.push(
+      "---",
+      "",
+      "## Outcome (single-system mode)",
+      "",
+      "**Guidance:** What the activity is directed at and works to transform — what the activity produces or changes.",
+      "",
+      "**Prompt:** *What does the activity produce? What change or result occurs through the transformation of the object?*",
+      "",
+      "---",
+      "",
+      "## Shared elements (dual-system mode)",
+      "",
+      "### Shared Object",
+      "",
+      "**Guidance:** What do both activity systems share as their common object or goal?",
+      "",
+      "**Prompt:** *What is the shared object or goal connecting both systems?*",
+      "",
+      "### Shared Outcome(s)",
+      "",
+      "**Guidance:** What is the shared outcome produced by both activity systems working together?",
+      "",
+      "**Prompt:** *What outcome do both systems jointly produce?*",
+      "",
+      "---",
+      "",
+      "## Contradiction types",
+      "",
+      "### ⚡ Primary contradiction",
+      "",
+      "A tension **within a single component**.",
+      "",
+      "*Example: the Tools node — staff must use a digital platform they find unusable.*",
+      "",
+      "### ⚡ Secondary contradiction",
+      "",
+      "A tension **between two components** of the same activity system.",
+      "",
+      "*Example: Rules demand standardised assessment, but the Object is personalised learning.*",
+      "",
+      "### ↔ Inter-systemic contradiction *(dual-system mode only)*",
+      "",
+      "A tension **between the two activity systems**.",
+      "",
+      "*Example: System 1's rules clash with System 2's division of labour.*",
+      "",
+      "### Note on tertiary contradictions",
+      "",
+      "Engeström (1987) also identifies **tertiary contradictions** — tensions between the dominant form of an activity and a culturally more advanced form of it — which are not modelled in this tool.",
+      ""
+    );
+
+    return lines.join("\n");
+  }
+
+  function downloadFile(content, filename, mimeType) {
+    const blob = new Blob([content], { type: mimeType });
+    const objectUrl = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = objectUrl;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.setTimeout(() => URL.revokeObjectURL(objectUrl), 0);
+  }
+
+  async function copyToClipboard(text) {
+    if (navigator.clipboard && typeof navigator.clipboard.writeText === "function") {
+      await navigator.clipboard.writeText(text);
+      return;
+    }
+
+    const temporaryTextarea = document.createElement("textarea");
+    temporaryTextarea.value = text;
+    temporaryTextarea.setAttribute("readonly", "");
+    temporaryTextarea.style.position = "fixed";
+    temporaryTextarea.style.opacity = "0";
+    document.body.appendChild(temporaryTextarea);
+    temporaryTextarea.select();
+    document.execCommand("copy");
+    temporaryTextarea.remove();
+  }
+
+  function getMenuItems(menu) {
+    return Array.from(menu.querySelectorAll("[role='menuitem']"));
+  }
+
+  function setMenuOpen(button, menu, isOpen, options = {}) {
+    const { focusFirstItem = false, restoreFocus = false } = options;
+    button.setAttribute("aria-expanded", String(isOpen));
+    menu.hidden = !isOpen;
+
+    if (isOpen && focusFirstItem) {
+      const [firstItem] = getMenuItems(menu);
+      if (firstItem) {
+        firstItem.focus();
+      }
+    }
+
+    if (!isOpen && restoreFocus) {
+      button.focus();
+    }
+  }
+
+  function setExportMenuOpen(isOpen, options = {}) {
+    setMenuOpen(dom.exportButton, dom.exportMenu, isOpen, options);
+  }
+
+  function setDiagramExportMenuOpen(isOpen, options = {}) {
+    setMenuOpen(dom.diagramExportButton, dom.diagramExportMenu, isOpen, options);
+  }
+
+  function closeAllMenus() {
+    setExportMenuOpen(false);
+    setDiagramExportMenuOpen(false);
+  }
+
+  function getFocusableElements(container) {
+    return Array.from(
+      container.querySelectorAll("button, a[href], textarea, input, select, [tabindex]:not([tabindex='-1'])")
+    ).filter((element) => !element.disabled && !element.hidden);
+  }
+
+  function trapFocus(event, container) {
+    if (event.key !== "Tab") {
+      return;
+    }
+
+    const focusableElements = getFocusableElements(container);
+    if (!focusableElements.length) {
+      return;
+    }
+
+    const firstElement = focusableElements[0];
+    const lastElement = focusableElements[focusableElements.length - 1];
+
+    if (event.shiftKey && document.activeElement === firstElement) {
+      event.preventDefault();
+      lastElement.focus();
+    } else if (!event.shiftKey && document.activeElement === lastElement) {
+      event.preventDefault();
+      firstElement.focus();
+    }
+  }
+
+  function openContradictionGuideDialog() {
+    state.contradictionGuideDialogOpener = document.activeElement;
+    syncContradictionGuideUi();
+    dom.contradictionGuideOverlay.hidden = false;
+    dom.contradictionInfoButton.setAttribute("aria-expanded", "true");
+    dom.contradictionGuideCloseButton.focus();
+    document.addEventListener("keydown", handleContradictionGuideDialogKeydown);
+  }
+
+  function closeContradictionGuideDialog() {
+    dom.contradictionGuideOverlay.hidden = true;
+    dom.contradictionInfoButton.setAttribute("aria-expanded", "false");
+    document.removeEventListener("keydown", handleContradictionGuideDialogKeydown);
+
+    if (state.contradictionGuideDialogOpener instanceof HTMLElement) {
+      state.contradictionGuideDialogOpener.focus();
+    }
+  }
+
+  function handleContradictionGuideDialogKeydown(event) {
+    if (event.key === "Escape") {
+      closeContradictionGuideDialog();
+      return;
+    }
+
+    trapFocus(event, dom.contradictionGuideBox);
+  }
+
+  function openLegalDialog() {
+    state.legalDialogOpener = document.activeElement;
+    dom.legalOverlay.hidden = false;
+    dom.legalCloseButton.focus();
+    document.addEventListener("keydown", handleLegalDialogKeydown);
+  }
+
+  function closeLegalDialog() {
+    dom.legalOverlay.hidden = true;
+    document.removeEventListener("keydown", handleLegalDialogKeydown);
+
+    if (state.legalDialogOpener instanceof HTMLElement) {
+      state.legalDialogOpener.focus();
+    }
+  }
+
+  function handleLegalDialogKeydown(event) {
+    if (event.key === "Escape") {
+      closeLegalDialog();
+      return;
+    }
+
+    trapFocus(event, dom.legalBox);
+  }
+
+  function resetContradictionState() {
+    state.contradictionMode = false;
+    state.contradictionFirstNodeId = null;
+    state.contradictionPromptNodes = null;
+    dom.contradictionEditor.hidden = true;
+    dom.contradictionButton.classList.remove("btn-contra-active");
+    dom.contradictionButton.setAttribute("aria-pressed", "false");
+  }
+
+  function toggleDualMode() {
+    state.dualMode = !state.dualMode;
+    state.activeNodeId = null;
+    state.activeSystem = 1;
+    hideEditor();
+    hideTooltip();
+    resetContradictionState();
+    syncGuidanceUi();
+    syncModeUi();
+
+    buildSvg();
+    updateSummary();
+    announce(state.dualMode ? "Two-system view enabled." : "Single-system view enabled.");
+  }
+
+  function bindEvents() {
+    dom.contradictionOverlayToggleButton.addEventListener("click", () => {
+      state.contradictionOverlayCollapsed = !state.contradictionOverlayCollapsed;
+      syncContradictionOverlayUi();
+    });
+
+    dom.controlsToggleButton.addEventListener("click", () => {
+      state.controlsPanelCollapsed = !state.controlsPanelCollapsed;
+      if (state.controlsPanelCollapsed) {
+        closeAllMenus();
+      }
+      syncControlsPanelUi();
+    });
+
+    dom.contradictionButton.addEventListener("click", () => {
+      setContradictionMode(!state.contradictionMode);
+    });
+    dom.contradictionInfoButton.addEventListener("click", openContradictionGuideDialog);
+
+    dom.contradictionCancelButton.addEventListener("click", cancelContradictionPrompt);
+    dom.dualButton.addEventListener("click", toggleDualMode);
+    dom.fullscreenButton.addEventListener("click", () => {
+      void toggleDiagramFullscreen();
+    });
+    dom.guidanceButton.addEventListener("click", () => {
+      state.diagramGuidanceEnabled = !state.diagramGuidanceEnabled;
+      if (!state.diagramGuidanceEnabled) {
+        hideTooltip();
+      }
+      syncGuidanceUi();
+      announce(state.diagramGuidanceEnabled ? "Diagram guidance pop-ups enabled." : "Diagram guidance pop-ups disabled.");
+    });
+
+    dom.copyButton.addEventListener("click", async () => {
+      try {
+        await copyToClipboard(exportText());
+        dom.copyButton.textContent = "Copied!";
+        announce("Summary copied to clipboard.");
+        window.clearTimeout(state.copyResetTimerId);
+        state.copyResetTimerId = window.setTimeout(() => {
+          dom.copyButton.textContent = "Copy record and notes";
+        }, 1800);
+      } catch (error) {
+        announce("Unable to copy summary and notes.");
+      }
+    });
+
+    dom.importJsonButton.addEventListener("click", () => {
+      dom.importJsonInput.click();
+    });
+
+    dom.importJsonInput.addEventListener("change", async (event) => {
+      const [file] = event.target.files || [];
+
+      try {
+        await importJsonFile(file);
+      } catch (error) {
+        announce(error instanceof Error ? error.message : "Unable to import the selected JSON file.");
+      } finally {
+        event.target.value = "";
+      }
+    });
+
+    dom.exportInterfaceButton.addEventListener("click", () => {
+      downloadFile(exportInterfaceMarkdown(), "export-interface-raw-content.md", "text/markdown");
+    });
+
+    dom.diagramExportButton.addEventListener("click", (event) => {
+      event.stopPropagation();
+      const isExpanded = dom.diagramExportButton.getAttribute("aria-expanded") === "true";
+      setExportMenuOpen(false);
+      setDiagramExportMenuOpen(!isExpanded, { focusFirstItem: !isExpanded });
+    });
+
+    dom.diagramExportMenu.addEventListener("click", async (event) => {
+      const format = event.target.dataset.diagramFmt;
+      if (!format) {
+        return;
+      }
+
+      try {
+        if (format === "svg") {
+          downloadDiagramAsSvg();
+        } else if (format === "png") {
+          await downloadDiagramAsPng();
+        }
+      } catch (error) {
+        announce(error instanceof Error ? error.message : "Unable to export the diagram.");
+      }
+
+      setDiagramExportMenuOpen(false, { restoreFocus: true });
+    });
+
+    dom.diagramExportMenu.addEventListener("keydown", (event) => {
+      const items = getMenuItems(dom.diagramExportMenu);
+      const currentIndex = items.indexOf(document.activeElement);
+
+      if (event.key === "Escape") {
+        setDiagramExportMenuOpen(false, { restoreFocus: true });
+        return;
+      }
+
+      if (event.key === "ArrowDown") {
+        event.preventDefault();
+        items[(currentIndex + 1) % items.length].focus();
+        return;
+      }
+
+      if (event.key === "ArrowUp") {
+        event.preventDefault();
+        items[(currentIndex - 1 + items.length) % items.length].focus();
+        return;
+      }
+
+      if (event.key === "Home") {
+        event.preventDefault();
+        items[0].focus();
+        return;
+      }
+
+      if (event.key === "End") {
+        event.preventDefault();
+        items[items.length - 1].focus();
+      }
+    });
+
+    dom.exportButton.addEventListener("click", (event) => {
+      event.stopPropagation();
+      const isExpanded = dom.exportButton.getAttribute("aria-expanded") === "true";
+      setDiagramExportMenuOpen(false);
+      setExportMenuOpen(!isExpanded, { focusFirstItem: !isExpanded });
+    });
+
+    dom.exportMenu.addEventListener("click", (event) => {
+      const format = event.target.dataset.fmt;
+      if (!format) {
+        return;
+      }
+
+      if (format === "text") {
+        downloadFile(exportText(), "activity-system.txt", "text/plain");
+      } else if (format === "markdown") {
+        downloadFile(exportMarkdown(), "activity-system.md", "text/markdown");
+      } else if (format === "json") {
+        downloadFile(exportJson(), "activity-system.json", "application/json");
+      } else if (format === "json-template") {
+        downloadFile(exportJsonTemplate(), "activity-system-template.json", "application/json");
+      }
+
+      setExportMenuOpen(false, { restoreFocus: true });
+    });
+
+    dom.exportMenu.addEventListener("keydown", (event) => {
+      const items = getMenuItems(dom.exportMenu);
+      const currentIndex = items.indexOf(document.activeElement);
+
+      if (event.key === "Escape") {
+        setExportMenuOpen(false, { restoreFocus: true });
+        return;
+      }
+
+      if (event.key === "ArrowDown") {
+        event.preventDefault();
+        items[(currentIndex + 1) % items.length].focus();
+        return;
+      }
+
+      if (event.key === "ArrowUp") {
+        event.preventDefault();
+        items[(currentIndex - 1 + items.length) % items.length].focus();
+        return;
+      }
+
+      if (event.key === "Home") {
+        event.preventDefault();
+        items[0].focus();
+        return;
+      }
+
+      if (event.key === "End") {
+        event.preventDefault();
+        items[items.length - 1].focus();
+      }
+    });
+
+    document.addEventListener("click", (event) => {
+      if (!dom.exportWrap.contains(event.target)) {
+        setExportMenuOpen(false);
+      }
+
+      if (!dom.diagramExportWrap.contains(event.target)) {
+        setDiagramExportMenuOpen(false);
+      }
+    });
+
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") {
+        closeAllMenus();
+      }
+    });
+
+    document.addEventListener("fullscreenchange", syncFullscreenUi);
+
+    dom.contradictionGuideCloseButton.addEventListener("click", closeContradictionGuideDialog);
+    dom.contradictionGuideOverlay.addEventListener("click", (event) => {
+      if (event.target === dom.contradictionGuideOverlay) {
+        closeContradictionGuideDialog();
+      }
+    });
+
+    dom.legalButton.addEventListener("click", openLegalDialog);
+    dom.legalCloseButton.addEventListener("click", closeLegalDialog);
+    dom.legalOverlay.addEventListener("click", (event) => {
+      if (event.target === dom.legalOverlay) {
+        closeLegalDialog();
+      }
+    });
+  }
+
+  function init() {
+    bindEvents();
+    syncContradictionOverlayUi();
+    syncControlsPanelUi();
+    syncGuidanceUi();
+    syncModeUi();
+    buildSvg();
+    updateSummary();
+    syncFullscreenUi();
+  }
+
+  init();
+})();
+</script>
+</body>
+</html>
