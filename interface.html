@@ -61,6 +61,12 @@
     font-weight: 600;
   }
 
+  h3,
+  h4 {
+    font-size: inherit;
+    font-weight: inherit;
+  }
+
   button,
   textarea {
     font: inherit;
@@ -95,7 +101,6 @@
     margin-top: 0.5rem;
     color: var(--text-muted);
     font-size: 0.875rem;
-    white-space: nowrap;
   }
 
   .visually-hidden {
@@ -131,7 +136,6 @@
   }
 
   #left {
-    order: 1;
     display: flex;
     flex-direction: column;
     gap: 0.875rem;
@@ -140,7 +144,7 @@
     min-width: 0;
   }
 
-  #right {
+  #controls {
     position: sticky;
     top: 0;
     z-index: 25;
@@ -189,10 +193,6 @@
     padding-right: 0.1rem;
   }
 
-  #right.is-collapsed {
-    width: 100%;
-    max-width: 100%;
-  }
 
   .panel-intro,
   .section-intro,
@@ -219,7 +219,7 @@
     gap: 8px;
   }
 
-  #right .btn-row[role="toolbar"] {
+  #controls .btn-row[role="toolbar"] {
     display: flex;
     flex-wrap: wrap;
     align-items: flex-start;
@@ -829,13 +829,13 @@
   }
 
   @media (max-width: 700px) {
-    #right {
+    #controls {
       position: static;
       box-shadow: none;
       backdrop-filter: none;
     }
 
-    #right .btn-row[role="toolbar"] {
+    #controls .btn-row[role="toolbar"] {
       flex-direction: column;
     }
 
@@ -879,13 +879,13 @@
 
 <div id="live-region" aria-live="polite" aria-atomic="true" class="visually-hidden"></div>
 
-<aside id="right" aria-labelledby="controls-heading">
+<section id="controls" aria-labelledby="controls-heading">
   <div class="floating-panel-header">
     <div class="floating-panel-title">
       <h2 id="controls-heading" class="panel-title">Analysis controls</h2>
       <p id="hint-text" aria-live="polite" class="visually-hidden"></p>
     </div>
-    <button id="controls-toggle-btn" class="panel-toggle-btn" aria-expanded="true" aria-controls="controls-panel-content">
+    <button type="button" id="controls-toggle-btn" class="panel-toggle-btn" aria-expanded="true" aria-controls="controls-panel-content">
       Collapse
     </button>
   </div>
@@ -894,17 +894,17 @@
     <div class="btn-row" role="toolbar" aria-label="Actions">
       <div class="toolbar-group" role="group" aria-label="Analysis mode">
         <span class="toolbar-group-label">Analysis mode</span>
-        <button id="dual-btn" aria-pressed="false">Compare two systems</button>
-        <button id="fullscreen-btn" aria-pressed="false">Full-screen diagram</button>
-        <button id="guidance-btn" aria-pressed="true">Guidance pop-ups: on</button>
+        <button type="button" id="dual-btn" aria-pressed="false">Compare two systems</button>
+        <button type="button" id="fullscreen-btn" aria-pressed="false">Full-screen diagram</button>
+        <button type="button" id="guidance-btn" aria-pressed="true">Guidance pop-ups: on</button>
       </div>
 
       <div class="toolbar-group" role="group" aria-label="Export and transfer">
         <span class="toolbar-group-label">Export and transfer</span>
-        <button id="export-interface-btn">Export interface text</button>
-        <button id="copy-btn">Copy record and notes</button>
+        <button type="button" id="export-interface-btn">Export interface text</button>
+        <button type="button" id="copy-btn">Copy record and notes</button>
         <div id="diagram-export-wrap">
-          <button
+          <button type="button"
             id="diagram-export-btn"
             aria-haspopup="menu"
             aria-expanded="false"
@@ -913,12 +913,12 @@
             Export diagram
           </button>
           <div id="diagram-export-menu" role="menu" aria-label="Diagram export format" hidden>
-            <button role="menuitem" data-diagram-fmt="svg">SVG</button>
-            <button role="menuitem" data-diagram-fmt="png">PNG</button>
+            <button type="button" role="menuitem" data-diagram-fmt="svg">SVG</button>
+            <button type="button" role="menuitem" data-diagram-fmt="png">PNG</button>
           </div>
         </div>
         <div id="export-wrap">
-          <button
+          <button type="button"
             id="export-btn"
             aria-haspopup="menu"
             aria-expanded="false"
@@ -927,18 +927,18 @@
             Export record and notes
           </button>
           <div id="export-menu" role="menu" aria-label="Export format" hidden>
-            <button role="menuitem" data-fmt="text">Plain text</button>
-            <button role="menuitem" data-fmt="markdown">Markdown</button>
-            <button role="menuitem" data-fmt="json">JSON</button>
-            <button role="menuitem" data-fmt="json-template">JSON template for AI</button>
+            <button type="button" role="menuitem" data-fmt="text">Plain text</button>
+            <button type="button" role="menuitem" data-fmt="markdown">Markdown</button>
+            <button type="button" role="menuitem" data-fmt="json">JSON</button>
+            <button type="button" role="menuitem" data-fmt="json-template">JSON template for AI</button>
           </div>
         </div>
-        <button id="import-json-btn">Import JSON</button>
+        <button type="button" id="import-json-btn">Import JSON</button>
         <input id="import-json-input" class="visually-hidden" type="file" accept=".json,application/json">
       </div>
     </div>
   </div>
-</aside>
+</section>
 
 <main id="app">
   <section id="left" aria-labelledby="diagram-heading">
@@ -954,7 +954,7 @@
       <div class="diagram-overlay-controls" role="group" aria-label="Contradiction(s)">
         <div class="diagram-overlay-header">
           <span class="toolbar-group-label">Contradiction(s)</span>
-          <button
+          <button type="button"
             id="contra-panel-toggle-btn"
             class="diagram-overlay-toggle"
             aria-expanded="false"
@@ -966,8 +966,8 @@
           </button>
         </div>
         <div id="contra-overlay-actions" class="diagram-overlay-actions">
-          <button id="contra-btn" aria-pressed="false">Map a contradiction</button>
-          <button
+          <button type="button" id="contra-btn" aria-pressed="false">Map a contradiction</button>
+          <button type="button"
             id="contra-info-btn"
             class="icon-button"
             aria-haspopup="dialog"
@@ -985,7 +985,6 @@
         viewBox="0 0 580 430"
         aria-label="Engeström Activity System Triangle — six interactive nodes: Tools, Subject, Object, Rules, Community, Division of Labour"
         aria-describedby="diagram-instructions"
-        focusable="false"
       ></svg>
       <div class="tooltip" id="tooltip" aria-hidden="true"></div>
     </div>
@@ -1014,8 +1013,8 @@
         aria-describedby="contra-type-desc"
       ></textarea>
       <div class="btn-row mt-6">
-        <button id="contra-save-btn">Save contradiction</button>
-        <button id="contra-cancel-btn">Cancel</button>
+        <button type="button" id="contra-save-btn">Save contradiction</button>
+        <button type="button" id="contra-cancel-btn">Cancel</button>
       </div>
     </section>
   </section>
@@ -1040,12 +1039,12 @@
 <footer id="page-footer">
   <p id="footer-credit">François Jourde (2026) — MIT Licence</p>
   <span class="footer-separator" aria-hidden="true">|</span>
-  <button id="legal-btn">Legal notice and privacy policy</button>
+  <button type="button" id="legal-btn">Legal notice and privacy policy</button>
 </footer>
 
 <div id="contra-guide-overlay" class="dialog-overlay" hidden>
   <div id="contra-guide-box" class="dialog-box" role="dialog" aria-modal="true" aria-labelledby="contra-guide-title">
-    <button id="contra-guide-close" class="dialog-close" aria-label="Close contradiction guidance">&#x2715;</button>
+    <button type="button" id="contra-guide-close" class="dialog-close" aria-label="Close contradiction guidance">&#x2715;</button>
     <div id="contra-guide-content" aria-label="Contradiction guidance">
       <h2 id="contra-guide-title">Contradiction guidance</h2>
       <div class="cg-row">
@@ -1073,7 +1072,7 @@
 
 <div id="legal-overlay" class="dialog-overlay" hidden>
   <div id="legal-box" class="dialog-box" role="dialog" aria-modal="true" aria-labelledby="legal-title">
-    <button id="legal-close" class="dialog-close" aria-label="Close Legal Notice">&#x2715;</button>
+    <button type="button" id="legal-close" class="dialog-close" aria-label="Close Legal Notice">&#x2715;</button>
     <div id="legal-content">
       <h2 id="legal-title">Legal Notice and Privacy Policy</h2>
 
@@ -1120,7 +1119,7 @@
   const GEOMETRY = Object.freeze({
     width: 580,
     height: 430,
-    leftGap: 680,
+    secondSystemOffsetX: 680,
     nodeRadius: 9,
     edgeGap: 6,
     toolsX: 270,
@@ -1138,14 +1137,7 @@
   const COMMUNITY_X = (GEOMETRY.rulesX + GEOMETRY.divisionX) / 2;
   const COMMUNITY_Y = (GEOMETRY.rulesY + GEOMETRY.divisionY) / 2;
 
-  const NODE_COLORS = Object.freeze({
-    tools: "#4b5563",
-    subject: "#4b5563",
-    object: "#4b5563",
-    rules: "#4b5563",
-    community: "#4b5563",
-    division: "#4b5563"
-  });
+  const NODE_COLOR = "#4b5563";
 
   const DIAGRAM_COLORS = Object.freeze({
     stroke: "#4f4f4a",
@@ -1282,7 +1274,7 @@
     NODE_DEFINITIONS.map((node) => ({
       ...node,
       id: `${node.id}_2`,
-      x: GEOMETRY.leftGap + (GEOMETRY.width - node.x),
+      x: GEOMETRY.secondSystemOffsetX + (GEOMETRY.width - node.x),
       labelOffsetX: -node.labelOffsetX,
       anchor: node.anchor === "start" ? "end" : node.anchor === "end" ? "start" : "middle"
     }))
@@ -1295,7 +1287,7 @@
   const NODE_MAP = new Map(NODE_DEFINITIONS.map((node) => [node.id, node]));
   const ALL_NODES = [...NODE_DEFINITIONS, ...SECONDARY_NODE_DEFINITIONS];
   const ALL_NODE_MAP = new Map(ALL_NODES.map((node) => [node.id, node]));
-  const FULL_VIEWBOX_WIDTH = GEOMETRY.leftGap + GEOMETRY.width;
+  const FULL_VIEWBOX_WIDTH = GEOMETRY.secondSystemOffsetX + GEOMETRY.width;
   const REQUIRED_NODE_IDS = Object.freeze(NODE_DEFINITIONS.map(({ id }) => id));
 
   const createEmptyNodeValues = () =>
@@ -1348,7 +1340,7 @@
     contradictionOverlay: document.querySelector(".diagram-overlay-controls"),
     contradictionOverlayActions: document.getElementById("contra-overlay-actions"),
     contradictionOverlayToggleButton: document.getElementById("contra-panel-toggle-btn"),
-    controlsPanel: document.getElementById("right"),
+    controlsPanel: document.getElementById("controls"),
     controlsPanelContent: document.getElementById("controls-panel-content"),
     controlsToggleButton: document.getElementById("controls-toggle-btn"),
     tooltip: document.getElementById("tooltip"),
@@ -1775,7 +1767,7 @@
     }
 
     const baseNodeId = getBaseNodeId(nodeId);
-    const nodeColor = NODE_COLORS[baseNodeId];
+    const nodeColor = NODE_COLOR;
     const nodeValue = getStoreForNode(nodeId)[baseNodeId].trim();
     const isActive = state.activeNodeId === nodeId;
     const isFirstContradictionNode =
@@ -2185,6 +2177,8 @@
 
       group.addEventListener("mouseenter", () => renderTooltip(node));
       group.addEventListener("mouseleave", hideTooltip);
+      group.addEventListener("focusin", () => renderTooltip(node));
+      group.addEventListener("focusout", hideTooltip);
 
       dom.svg.appendChild(group);
       createSvgElement(
@@ -2349,8 +2343,8 @@
 
     state.activeEditorTarget = { type: "node", nodeId };
     dom.editor.hidden = false;
-    dom.editor.style.border = `2px solid ${NODE_COLORS[baseNodeId]}`;
-    dom.editorLabel.style.color = NODE_COLORS[baseNodeId];
+    dom.editor.style.border = `2px solid ${NODE_COLOR}`;
+    dom.editorLabel.style.color = NODE_COLOR;
     dom.editorLabel.textContent = `${nodeDefinition.label}${systemLabel}`;
     dom.editorGuidance.textContent = nodeDefinition.guidance;
     dom.editorPrompt.textContent = nodeDefinition.prompt;
@@ -2610,12 +2604,18 @@
     );
   }
 
-  function createSummaryInput(label, value, onInput, placeholder = "Add analysis…") {
+  let _summaryRowId = 0;
+
+  function createSummaryInput(label, value, onInput, placeholder = "Add analysis…", id = null) {
     const input = document.createElement("textarea");
     input.className = "sr-input";
     input.rows = 1;
     input.placeholder = placeholder;
-    input.setAttribute("aria-label", label);
+    if (id) {
+      input.id = id;
+    } else {
+      input.setAttribute("aria-label", label);
+    }
     input.value = value;
     autoResizeTextarea(input);
     input.addEventListener("input", () => {
@@ -2626,14 +2626,16 @@
   }
 
   function createSummaryRow(label, value, onInput, placeholder) {
+    const id = `sr-field-${++_summaryRowId}`;
     const row = document.createElement("div");
     row.className = "sr-row";
 
-    const labelElement = document.createElement("div");
+    const labelElement = document.createElement("label");
     labelElement.className = "sr-label";
+    labelElement.htmlFor = id;
     labelElement.textContent = label;
 
-    const valueElement = createSummaryInput(label, value, onInput, placeholder);
+    const valueElement = createSummaryInput(label, value, onInput, placeholder, id);
 
     row.append(labelElement, valueElement);
     return row;
@@ -2647,14 +2649,14 @@
   }
 
   function createSummaryHeading(text) {
-    const heading = document.createElement("div");
+    const heading = document.createElement("h3");
     heading.className = "sr-sys-heading";
     heading.textContent = text;
     return heading;
   }
 
   function createSummaryGroupHeading(text) {
-    const heading = document.createElement("div");
+    const heading = document.createElement("h4");
     heading.className = "sr-group-heading";
     heading.textContent = text;
     return heading;
