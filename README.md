@@ -3,7 +3,7 @@
 An interactive single-page application for analysing human activity with Engeström's Activity System model in cultural-historical activity theory (CHAT).
 The interface allows mapping one or two activity systems, documenting core components, and identifying selected forms of contradiction.
 
-**Live demo:** [https://jourde.github.io/chat/interface.html](https://jourde.github.io/chat/interface.html)
+➜ **Live demo:** [https://jourde.github.io/chat/interface.html](https://jourde.github.io/chat/interface.html)
 
 ## Overview
 
